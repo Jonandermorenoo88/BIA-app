@@ -74,14 +74,13 @@ public class BiaDashboardController {
                 .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
                 
         int totalProcesos = bia.getProcesos().size();
+
+        // Clasificación de riesgo centralizada en ProcesoCritico (getNivelRiesgo/isCritico/isAlto)
         long procesosCriticos = bia.getProcesos().stream()
-                .filter(p -> (p.getImpacto() != null ? p.getImpacto() : 1) * (p.getProbabilidad() != null ? p.getProbabilidad() : 1) >= 15)
+                .filter(ProcesoCritico::isCritico)
                 .count();
         long procesosAltos = bia.getProcesos().stream()
-                .filter(p -> {
-                    int r = (p.getImpacto() != null ? p.getImpacto() : 1) * (p.getProbabilidad() != null ? p.getProbabilidad() : 1);
-                    return r >= 6 && r < 15;
-                })
+                .filter(ProcesoCritico::isAlto)
                 .count();
                 
         // Empleados SPOF (Asignados a multiples procesos en este BIA)

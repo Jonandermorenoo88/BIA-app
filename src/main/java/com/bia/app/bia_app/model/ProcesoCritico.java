@@ -39,6 +39,39 @@ public class ProcesoCritico {
         this.criticidad = imp + urgencia;
     }
 
+    // ===== LÓGICA DE RIESGO CENTRALIZADA =====
+    // Única fuente de verdad para clasificar el riesgo de un proceso.
+    // Usada por: BiaDashboardController, informe_ejecutivo.html, ExcelExportService.
+
+    /**
+     * Riesgo total = Impacto x Probabilidad (escala 1-25).
+     * Se usa para el heatmap, el informe ejecutivo y el Excel.
+     */
+    public int getRiesgoTotal() {
+        int imp = this.impacto != null ? this.impacto : 1;
+        int prob = this.probabilidad != null ? this.probabilidad : 1;
+        return imp * prob;
+    }
+
+    /**
+     * Clasificación textual del riesgo según umbrales únicos.
+     * CRITICO: 15-25 | ALTO: 6-14 | MEDIO_BAJO: 1-5
+     */
+    public String getNivelRiesgo() {
+        int riesgo = getRiesgoTotal();
+        if (riesgo >= 15) return "CRITICO";
+        if (riesgo >= 6) return "ALTO";
+        return "MEDIO_BAJO";
+    }
+
+    public boolean isCritico() {
+        return "CRITICO".equals(getNivelRiesgo());
+    }
+
+    public boolean isAlto() {
+        return "ALTO".equals(getNivelRiesgo());
+    }
+
     public Long getId() {
         return id;
     }

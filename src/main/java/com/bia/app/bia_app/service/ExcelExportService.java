@@ -70,7 +70,7 @@ public class ExcelExportService {
                     int impacto = p.getImpacto() != null ? p.getImpacto() : 1;
                     int prob = p.getProbabilidad() != null ? p.getProbabilidad() : 1;
                     int criticidad = p.getCriticidad() != null ? p.getCriticidad() : 2;
-                    int riesgoVisual = impacto * prob; // Heatmap usa Impacto * Prob
+                    int riesgoVisual = p.getRiesgoTotal(); // Centralizado en ProcesoCritico
 
                     row.createCell(0).setCellValue(p.getNombre());
                     row.createCell(1).setCellValue(p.getDescripcion());
@@ -81,13 +81,16 @@ public class ExcelExportService {
                     row.createCell(5).setCellValue(prob);
                     row.createCell(6).setCellValue(criticidad);
                     
-                    // Columna Riesgo Total (Heatmap magic)
+                    // Columna Riesgo Total (clasificación centralizada vía getNivelRiesgo())
+                    // Se mantiene un corte visual extra dentro de "ALTO" (10-14 vs 6-9)
+                    // para conservar el matiz de color que tenía el heatmap original.
                     Cell riskCell = row.createCell(7);
                     riskCell.setCellValue(riesgoVisual);
-                    if (riesgoVisual >= 15) riskCell.setCellStyle(styleDarkRed);
-                    else if (riesgoVisual >= 10) riskCell.setCellStyle(styleRed);
-                    else if (riesgoVisual >= 6) riskCell.setCellStyle(styleYellow);
-                    else riskCell.setCellStyle(styleGreen);
+                    switch (p.getNivelRiesgo()) {
+                        case "CRITICO" -> riskCell.setCellStyle(styleDarkRed);
+                        case "ALTO" -> riskCell.setCellStyle(riesgoVisual >= 10 ? styleRed : styleYellow);
+                        default -> riskCell.setCellStyle(styleGreen);
+                    }
 
                     // Formatear dependencias (lista String)
                     String activosStr = "";

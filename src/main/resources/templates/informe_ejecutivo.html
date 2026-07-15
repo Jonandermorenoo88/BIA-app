@@ -346,9 +346,10 @@
                     <td th:text="${p.rtoHoras} + ' Horas'"></td>
                     <td th:text="${p.rpo}"></td>
                     <td>
-                        <span th:if="${(p.impacto!=null?p.impacto:1)*(p.probabilidad!=null?p.probabilidad:1) >= 15}" class="pill-critical">CRÍTICO</span>
-                        <span th:if="${(p.impacto!=null?p.impacto:1)*(p.probabilidad!=null?p.probabilidad:1) >= 6 and (p.impacto!=null?p.impacto:1)*(p.probabilidad!=null?p.probabilidad:1) < 15}" class="pill-high">ALTO</span>
-                        <span th:if="${(p.impacto!=null?p.impacto:1)*(p.probabilidad!=null?p.probabilidad:1) < 6}" class="pill-normal">MEDIO-BAJO</span>
+                        <!-- Clasificación centralizada: ProcesoCritico.getNivelRiesgo() -->
+                        <span th:if="${p.nivelRiesgo == 'CRITICO'}" class="pill-critical">CRÍTICO</span>
+                        <span th:if="${p.nivelRiesgo == 'ALTO'}" class="pill-high">ALTO</span>
+                        <span th:if="${p.nivelRiesgo == 'MEDIO_BAJO'}" class="pill-normal">MEDIO-BAJO</span>
                     </td>
                     <td>
                         <ul>
