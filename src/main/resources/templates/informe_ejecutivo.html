@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <title th:text="'Informe BIA - ' + ${bia.nombre}">Informe Ejecutivo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* BASE STYLES FOR SCREEN AND PRINT */
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .a4-container {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            margin: 20px auto;
+            padding: 20mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            position: relative;
+        }
+        h1, h2, h3 { color: #1e3a8a; /* Dark Blue */ }
+        h1 { font-size: 2.5rem; text-align: center; margin-top: 100px; margin-bottom: 20px; }
+        h2 { border-bottom: 2px solid #1e3a8a; padding-bottom: 5px; margin-top: 40px; }
+        
+        .cover-page {
+            height: 250mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .cover-subtitle { font-size: 1.2rem; color: #666; margin-bottom: 50px; }
+        .meta-info { margin-top: auto; font-size: 0.9rem; color: #555; text-align: left; width: 100%; border-top: 1px solid #ccc; padding-top: 20px; }
+        
+        .exec-summary {
+            background-color: #f8fafc;
+            border-left: 4px solid #1e3a8a;
+            padding: 15px 20px;
+            margin: 20px 0;
+            font-size: 1.05rem;
+        }
+        .alert-box {
+            background-color: #fff1f2;
+            border: 1px solid #fda4af;
+            border-left: 4px solid #e11d48;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .alert-box h4 { color: #e11d48; margin-top: 0; margin-bottom: 5px; }
+        
+        table.bia-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.85rem;
+        }
+        table.bia-table th, table.bia-table td {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            text-align: left;
+        }
+        table.bia-table th { background-color: #1e3a8a; color: white; }
+        
+        .pill-critical { background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .pill-high { background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .pill-normal { background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+
+        /* GRID HEATMAP FOR PDF */
+        .hm-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 2px;
+            width: 100%; height: 350px; background: #e2e8f0; padding: 2px;
+        }
+        .hm-cell {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 0.7rem; color: #000; overflow: hidden; position: relative; border: 1px solid rgba(0,0,0,0.1);
+        }
+        .hm-1 { background-color: #a7f3d0; } /* Light Green */
+        .hm-2 { background-color: #34d399; } /* Green */
+        .hm-3 { background-color: #fcd34d; } /* Yellow */
+        .hm-4 { background-color: #f87171; } /* Red */
+        .hm-5 { background-color: #be123c; color: white !important;} /* Dark Red */
+        .process-dot {
+            width: 14px; height: 14px; background: black; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.5); margin: 2px;
+        }
+        .process-dot.invert { border: 2px solid #ccc; background: white; }
+
+        /* PRINT MEDIA QUERY */
+        @media print {
+            body { background-color: white; }
+            .a4-container { margin: 0; padding: 15mm; box-shadow: none; border: none; width: 100%; border-radius: 0; page-break-after: always; }
+            .no-print { display: none !important; }
+            .page-break { page-break-before: always; }
+            /* Force background colors to print */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+
+        .btn-print {
+            position: fixed; top: 20px; right: 20px; background: #1e3a8a; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 1000;
+        }
+
+    </style>
+</head>
+<body>
+
+    <button class="btn-print no-print" onclick="window.print()">🖨️ Descargar PDF / Imprimir</button>
+    <a th:href="@{/empresas/{empresaId}/bias/{biaId}(empresaId=${empresa.id}, biaId=${bia.id})}" class="btn-print no-print" style="right: 250px; background: #64748b;">&larr; Volver</a>
+
+    <!-- PORTADA -->
+    <div class="a4-container">
+        <div class="cover-page">
+            <h1 style="font-size: 3rem;">INFORME EJECUTIVO DE CONTINUIDAD</h1>
+            <h2 style="border: none; margin-top: 0; font-size: 2rem; color: #333;" th:text="${bia.nombre}">BIA 2026</h2>
+            <p class="cover-subtitle">Business Impact Analysis y Mapeo de RTO/RPO</p>
+            <p style="font-size: 1.5rem; color: #1e3a8a; font-weight: bold; margin-top: 30px;" th:text="${empresa.nombre}">Nombre de la Empresa</p>
+            
+            <div class="meta-info">
+                <strong>Documento generado:</strong> <span th:text="${#calendars.format(#calendars.createNow(), 'dd MMM yyyy HH:mm')}"></span><br>
+                <strong>Tipo de Informe:</strong> Audit / Gerencial<br>
+                <strong>Clasificación:</strong> Confidencial
+            </div>
+        </div>
+    </div>
+
+    <!-- PÁGINA 1: RESUMEN EJECUTIVO -->
+    <div class="a4-container">
+        <h2>1. Resumen Ejecutivo</h2>
+        
+        <h3 style="font-size: 1.1rem; color: #1e3a8a; margin-top: 25px;">1.1 Objetivo del Análisis (BIA)</h3>
+        <p style="text-align: justify;">
+            El presente Análisis de Impacto en el Negocio (BIA), correspondiente al ejercicio <strong><span th:text="${bia.nombre}"></span></strong>, tiene como objetivo identificar los procesos clave de la organización <strong><span th:text="${empresa.nombre}"></span></strong> y evaluar su impacto ante posibles interrupciones.
+            <br><br>
+            El análisis permite determinar los tiempos máximos de recuperación (RTO) y pérdida de datos (RPO), así como establecer el nivel de resiliencia operativa de la compañía.
+        </p>
+
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+
+        <h3 style="font-size: 1.1rem; color: #1e3a8a; margin-top: 25px;">1.2 Alcance Funcional</h3>
+        <div th:if="${totalProcesos > 0}">
+            <p style="text-align: justify;">
+                A nivel funcional, el alcance de las métricas obtenidas pivota sobre la evaluación computada del total de <strong><span th:text="${totalProcesos}"></span> procesos de negocio</strong> documentados. El modelo analítico desplegado incluye no solo la determinación del nivel de Criticidad global, sino también el mapeo integral de las dependencias tecnológicas (ciberactivos) y humanas (personal clave) necesarias para sostener las operaciones durante incidentes de máxima severidad.
+            </p>
+        </div>
+        <div th:if="${totalProcesos == 0}">
+            <p style="text-align: justify; color: #64748b;">
+                En el momento de la generación del presente informe, no se han registrado procesos de negocio dentro del alcance del BIA.
+                <br><br>
+                No obstante, el modelo implementado contempla la evaluación integral de procesos, incluyendo sus dependencias tecnológicas (ciberactivos) y humanas (personal clave), así como el cálculo de criticidad y riesgo asociado.
+            </p>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+
+        <h3 style="font-size: 1.1rem; color: #1e3a8a; margin-top: 25px;">1.3 Síntesis de Resultados</h3>
+        <div th:if="${totalProcesos > 0}" class="exec-summary">
+            Tras el procesamiento de los <strong><span th:text="${totalProcesos}"></span> procesos</strong> evaluados, 
+            se ha determinado que <strong><span th:text="${procesosCriticos}"></span> procesos</strong> se encuentran en un estado <strong>CRÍTICO</strong> (requerimiento de RTO agresivo e impacto inasumible ante caídas prolongadas), 
+            mientras que <strong><span th:text="${procesosAltos}"></span> procesos</strong> adicionales presentan un nivel de riesgo <strong>ALTO</strong>.
+        </div>
+        <div th:if="${totalProcesos == 0}" style="background-color: #f1f5f9; border-left: 4px solid #94a3b8; padding: 15px 20px; color: #475569;">
+            Dado que no existen procesos documentados en el sistema en la fecha actual, no se han identificado matemáticamente niveles de criticidad ni riesgos cruzados asociados.
+            <br><br>
+            En consecuencia, no se detectan procesos críticos ni de alto riesgo en el estado incipiente del análisis.
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+
+        <h3 style="margin-top: 30px; font-size: 1.1rem; color: #1e3a8a;">Alertas de Punto Único de Fallo (SPOF)</h3>
+        
+        <div th:if="${spofPersonas.size() > 0 or spofActivos.size() > 0}">
+            <p>El sistema ha detectado dependencias cruzadas peligrosas que concentran riesgo de continuidad operativa:</p>
+            
+            <div th:if="${spofPersonas.size() > 0}" class="alert-box">
+                <h4>⚠️ Alerta de Fuga de Conocimiento (Personal)</h4>
+                Las siguientes personas son un cuello de botella, estando vinculadas a múltiples procesos evaluados. Se requiere documentar sus suplentes:
+                <ul style="margin-bottom: 0;">
+                    <li th:each="p : ${spofPersonas}" th:text="${p.nombre} + ' (' + ${p.cargo} + ')'"></li>
+                </ul>
+            </div>
+            
+            <div th:if="${spofActivos.size() > 0}" class="alert-box">
+                <h4>⚠️ Alerta de Infraestructura Crítica Continua</h4>
+                Los siguientes Ciberactivos soportan múltiples procesos BIA simultáneamente. Requieren ser incluidos en Planes de Recuperación de Desastres (DRP) en Alta Disponibilidad:
+                <ul style="margin-bottom: 0;">
+                    <li th:each="a : ${spofActivos}" th:text="${a.nombre} + ' (' + ${a.tipo} + ')'"></li>
+                </ul>
+            </div>
+        </div>
+        <div th:if="${spofPersonas.size() == 0 and spofActivos.size() == 0}">
+            <p style="color: #166534; font-weight: bold; background: #f0fdf4; padding: 10px; border-radius: 4px;">✔ No se han identificado concentraciones de riesgo asociadas a dependencias críticas (SPOF) en la arquitectura tecnológica o personal clave.</p>
+        </div>
+    </div>
+
+    <!-- PÁGINA 2: METODOLOGÍA DE EVALUACIÓN -->
+    <div class="a4-container">
+        <h2>2. Metodología de Evaluación del BIA</h2>
+        
+        <p style="text-align: justify; margin-bottom: 20px;">
+            El desarrollo del presente Análisis de Impacto en el Negocio se ha fundamentado en estándares internacionales de Continuidad de Negocio (ISO 22301) y Seguridad de la Información (ISO 27001 / ENS). 
+            
+            <span th:if="${totalProcesos > 0}">
+                La aplicación de este marco metodológico sobre los <strong><span th:text="${totalProcesos}"></span> procesos</strong> evaluados ha permitido establecer una base cuantitativa para la toma de decisiones, identificando <strong><span th:text="${procesosCriticos}"></span> operativas críticas</strong> frente a potenciales escenarios de disrupción.
+            </span>
+            <span th:if="${totalProcesos == 0}">
+                El modelo metodológico se aplicará de manera estructurada a las operativas de la organización a medida que se proceda con la fase de levantamiento de información de los procesos de negocio.
+            </span>
+        </p>
+
+        <h3 style="font-size: 1.05rem; color: #1e3a8a;">2.1 Modelo de Impacto</h3>
+        <p style="text-align: justify; font-size: 0.95rem; margin-bottom: 10px;">
+            El Impacto evalúa las consecuencias negativas (financieras, operativas, legales o reputacionales) derivadas de la interrupción de un proceso de negocio. Se cuantifica en una métrica estandarizada del 1 (Impacto Bajo) al 5 (Impacto Crítico).
+        </p>
+        <table class="bia-table" style="font-size: 0.8rem; margin-bottom: 20px;">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Nivel</th>
+                    <th style="width: 20%;">Categoría</th>
+                    <th style="width: 70%;">Criterio Cuantitativo y Cualitativo Genérico</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td>Impacto Menor</td><td>Afectación puramente operativa solucionable en horas. Sin quejas ni penalizaciones legales.</td></tr>
+                <tr><td>2</td><td>Impacto Moderado</td><td>Ineficiencia temporal, quejas de clientes no críticas, pérdidas financieras menores al 1% del CAPEX.</td></tr>
+                <tr><td>3</td><td>Impacto Importante</td><td>Incumplimiento de ANS (SLAs), fuga de clientes esporádica y multas contractuales bajas.</td></tr>
+                <tr><td>4</td><td>Impacto Severo</td><td>Caída de facturación masiva, multas sancionatorias regulatorias (RGPD, CNMV, etc.), daño reputacional con eco mediático local.</td></tr>
+                <tr><td>5</td><td>Impacto Crítico</td><td>Multas que comprometan la liquidez de la empresa, fuga masiva del mercado, crisis de prensa nacional o quiebra en un horizonte de semanas.</td></tr>
+            </tbody>
+        </table>
+
+        <h3 style="font-size: 1.05rem; color: #1e3a8a;">2.2 Probabilidad</h3>
+        <p style="text-align: justify; font-size: 0.95rem;">
+            La Probabilidad determina la frecuencia estadística esperada de que un evento disruptivo actúe sobre el proceso o sobre sus dependencias subyacentes. Se califica en una escala del 1 (Altamente Improbable) al 5 (Casi Cierta), basada en amenazas del entorno, vulnerabilidades tecnológicas y efectividad de los controles instalados.
+        </p>
+
+        <h3 style="font-size: 1.05rem; color: #1e3a8a;">2.3 Cálculo y Umbrales de Riesgo</h3>
+        <p style="text-align: justify; font-size: 0.95rem; margin-bottom: 15px;">
+            El Nivel de Riesgo Operacional puro se extrae del producto matemático (Riesgo = Impacto × Probabilidad). Esta variable de negocio permite discriminar de forma objetiva qué procesos exponen a la empresa por encima de su "Apetito al Riesgo".
+        </p>
+        <table class="bia-table" style="font-size: 0.8rem; margin-bottom: 20px;">
+            <thead>
+                <tr>
+                    <th style="width: 15%; text-align: center;">Clasificación</th>
+                    <th style="width: 15%; text-align: center;">Puntuación</th>
+                    <th style="width: 70%;">Tratamiento Obligatorio del Riesgo (Contramedidas)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="background-color: #a7f3d0; color: #064e3b; font-weight: bold; text-align: center;">ACEPTABLE</td>
+                    <td style="text-align: center;">1 a 5</td>
+                    <td>Riesgo asumido. No requiere presupuesto contundente, aplica resiliencia estructural estándar.</td>
+                </tr>
+                <tr>
+                    <td style="background-color: #fcd34d; color: #78350f; font-weight: bold; text-align: center;">MODERADO</td>
+                    <td style="text-align: center;">6 a 9</td>
+                    <td>Precisa un plan de monitoreo contínuo de TI. Sistemas tolerables con backups (Copias) nocturnos y rutinas de prevención de caídas.</td>
+                </tr>
+                <tr>
+                    <td style="background-color: #f87171; color: #7f1d1d; font-weight: bold; text-align: center;">ALTO</td>
+                    <td style="text-align: center;">10 a 14</td>
+                    <td>Requiere implementación ineludible de un Procedimiento BCP documentado, y la infraestructura que lo asista debe tener componentes redundantes o virtualizados.</td>
+                </tr>
+                <tr>
+                    <td style="background-color: #be123c; color: #fff; font-weight: bold; text-align: center;">CRÍTICO</td>
+                    <td style="text-align: center;">15 a 25</td>
+                    <td>Riesgo mortal para el negocio. La infraestructura vinculada (Personas y Servidores IT) exige regímenes de Alta Disponibilidad Activa y Simulacros de continuidad al menos semestrales.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3 style="font-size: 1.05rem; color: #1e3a8a;">2.4 Cálculo de Criticidad y Priorización</h3>
+        <p style="text-align: justify; font-size: 0.95rem;">
+            La Criticidad Global de un proceso se infiere de forma automatizada sumando su Impacto y una tasa ponderada de Urgencia subyacente a su Tiempo de Recuperación Objetivo. A menor tiempo de respuesta tolerado por la operativa financiera, mayor es la puntuación de Urgencia asimilada (otorgando hasta 5 puntos si la ventana de inactividad es inferior a sesenta minutos). El resultante genera un espectro analítico que escala del 2 al 10, definiendo el orden de prioridad ineludible o "Tiering" de continuidad.
+        </p>
+
+        <h3 style="font-size: 1.05rem; color: #1e3a8a;">2.5 RTO y RPO</h3>
+        <p style="text-align: justify; font-size: 0.95rem;">
+            <strong>RTO (Recovery Time Objective):</strong> Define el tiempo límite presupuestado que un proceso puede permanecer inactivo o degradado sin provocar una penalización irreversible que comprometa la supervivencia de la entidad.<br>
+            <strong>RPO (Recovery Point Objective):</strong> Determina el umbral máximo de pérdida de datos viva que la organización tolera, dictaminando así la frecuencia de respaldos (Copias de Seguridad / Replicación) para la infraestructura tecnológica.
+        </p>
+
+        <h3 style="font-size: 1.05rem; color: #1e3a8a;">2.6 Representación Visual Ejecutiva</h3>
+        <p style="text-align: justify; font-size: 0.95rem;">
+            Para optimizar la ingesta de datos por parte del Comité de Dirección, los resultados matemáticos se sintetizan mediante dos herramientas gráficas diagnósticas:<br>
+            <strong>Matriz de Calor (Heatmap):</strong> Grilla analítica de 5x5 cruzando Probabilidad de Ocurrencia frente a Impacto en el Negocio. Es el soporte visual principal para auditorías operativas.<br>
+            <strong>Dispersión de Continuidad (Scatter Chart):</strong> Proyecta la Criticidad Global frente al horizonte temporal (RTO), evidenciando de forma explícita qué áreas requieren una reactivación expedita y arquitecturas informáticas en Alta Disponibilidad sostenidas en la nube o clusters locales.
+        </p>
+    </div>
+
+    <!-- PÁGINA 3: GRÁFICOS VISUALES -->
+    <div class="a4-container">
+        <h2>3. Representación Visual del Riesgo</h2>
+        
+        <div style="display: flex; gap: 20px; margin-top: 30px;">
+            <!-- SCATTER CHART -->
+            <div style="flex: 1;">
+                <h3 style="font-size: 1rem; text-align: center; margin-bottom: 5px;">Dispersión: RTO vs Criticidad Automática</h3>
+                <div style="width: 100%; height: 350px; background: white; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
+                    <canvas id="pdfChart"></canvas>
+                </div>
+                <p style="font-size: 0.75rem; color: #666; text-align: center;">El eje Y representa el peso matemático asignado al proceso (Máximo 10). A mayor Y y menor X, urge mayor presupuesto.</p>
+            </div>
+
+            <!-- HEATMAP -->
+            <div style="flex: 1;">
+                <h3 style="font-size: 1rem; text-align: center; margin-bottom: 5px;">Matriz 5x5: Probabilidad vs Impacto</h3>
+                <div style="display: flex;">
+                    <div style="writing-mode: vertical-lr; transform: rotate(180deg); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: #666; width: 20px;">
+                        Impacto (1-5) &rarr;
+                    </div>
+                    <div id="pdf-heatmap" class="hm-grid" style="flex:1;">
+                        <!-- JS injected -->
+                    </div>
+                </div>
+                <div style="text-align: center; font-size: 0.75rem; color: #666; padding-left: 20px;">
+                    &larr; Probabilidad de Ocurrencia (1-5) &rarr;
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PÁGINA 4: TABLA DETALLADA -->
+    <div class="a4-container">
+        <h2>4. Detalle de Procesos y Exigencias RTO</h2>
+        <table class="bia-table">
+            <thead>
+                <tr>
+                    <th>Proceso</th>
+                    <th>RTO Exigido</th>
+                    <th>RPO</th>
+                    <th>Nivel Riesgo</th>
+                    <th>Activos TI Críticos</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="p : ${bia.procesos}">
+                    <td><strong th:text="${p.nombre}"></strong></td>
+                    <td th:text="${p.rtoHoras} + ' Horas'"></td>
+                    <td th:text="${p.rpo}"></td>
+                    <td>
+                        <span th:if="${(p.impacto!=null?p.impacto:1)*(p.probabilidad!=null?p.probabilidad:1) >= 15}" class="pill-critical">CRÍTICO</span>
+                        <span th:if="${(p.impacto!=null?p.impacto:1)*(p.probabilidad!=null?p.probabilidad:1) >= 6 and (p.impacto!=null?p.impacto:1)*(p.probabilidad!=null?p.probabilidad:1) < 15}" class="pill-high">ALTO</span>
+                        <span th:if="${(p.impacto!=null?p.impacto:1)*(p.probabilidad!=null?p.probabilidad:1) < 6}" class="pill-normal">MEDIO-BAJO</span>
+                    </td>
+                    <td>
+                        <ul>
+                            <li th:each="act : ${p.activos}" th:text="${act.nombre}"></li>
+                        </ul>
+                        <span th:if="${p.activos.size() == 0}">- Ninguno -</span>
+                    </td>
+                </tr>
+                <tr th:if="${bia.procesos.size() == 0}">
+                    <td colspan="5" style="text-align: center;">No hay procesos registrados.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PÁGINA 5: CONCLUSIÓN AUTOMÁTICA -->
+    <div class="a4-container">
+        <h2>5. Conclusión y Dictamen de Continuidad</h2>
+        
+        <div style="font-size: 1.05rem; margin-top: 20px; line-height: 1.8;">
+            <p>Tras la ponderación algorítmica de los procesos evaluados en el presente BIA, la Dirección de Continuidad de Negocio establece el siguiente dictamen:</p>
+            
+            <div th:if="${procesosCriticos > 0}" style="margin-bottom: 20px; border-left: 4px solid #b91c1c; padding-left: 15px;">
+                <strong><span th:text="${procesosCriticos}"></span> Procesos en Nivel de Alerta Máxima (CRÍTICO):</strong><br>
+                Estos procesos poseen una matriz probabilística y de impacto que no admite caídas prolongadas. Es <strong>imperativo y de carácter urgente</strong> desarrollar Planes de Continuidad de Negocio (BCP) viables, así como asegurar presupuesto para arquitecturas de contingencia (DRP) que garanticen su supervivencia. Las pérdidas proyectadas ante incidentes severos superarían el límite de tolerancia al riesgo de la compañía.
+            </div>
+
+            <div th:if="${spofActivos.size() > 0 or spofPersonas.size() > 0}" style="margin-bottom: 20px; border-left: 4px solid #b45309; padding-left: 15px;">
+                <strong>Puntos Únicos de Fallo Estructurales:</strong><br>
+                La concentración de dependencias de negocio sobre infraestructuras de TI aisladas o personal específico evidencia una fragilidad sistémica. Se requiere implementar políticas inmediatas de <strong>Alta Disponibilidad Técnica (HA)</strong> y <strong>Cross-Training (Matriz de Polivalencia)</strong> sobre el personal saturado de responsabilidades críticas para evitar paradas totales en cadena.
+            </div>
+
+            <div th:if="${procesosCriticos == 0 and spofActivos.size() == 0 and spofPersonas.size() == 0}" style="margin-bottom: 20px; border-left: 4px solid #166534; padding-left: 15px;">
+                <strong>Perfil de Resiliencia Operativa Favorable:</strong><br>
+                Ningún proceso analizado supera los umbrales críticos de disrupción definidos. La arquitectura operativa no presenta dependencias críticas concentradas (SPOF). Se certifica la resiliencia base de la organización, recomendándose mantener las políticas vigentes y actualizar el presente análisis de forma anual.
+            </div>
+
+            <p style="margin-top: 40px;">
+                <strong>Siguientes Pasos Formales:</strong>
+                <ul style="margin-top: 5px;">
+                    <li th:if="${procesosCriticos > 0}">Priorización presupuestaria de partidas de mitigación de IT para servicios Tier 1.</li>
+                    <li>Firma y aceptación del nivel de riesgo residual por parte del Comité de Dirección.</li>
+                    <li>Programación de simulacros anuales.</li>
+                </ul>
+            </p>
+        </div>
+        
+        <!-- Bloque de Firmas -->
+        <div style="margin-top: 80px; display: flex; justify-content: space-around; text-align: center;">
+            <div style="width: 250px;">
+                <hr style="border: 1px solid #333; margin-bottom: 10px;">
+                <strong>Firma DPO / Dir. Continuidad</strong><br>
+                <span style="font-size: 0.8rem; color: #666;">Fecha: _________________</span>
+            </div>
+            <div style="width: 250px;">
+                <hr style="border: 1px solid #333; margin-bottom: 10px;">
+                <strong>Firma Dirección General</strong><br>
+                <span style="font-size: 0.8rem; color: #666;">Fecha: _________________</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS PARA LOS GRÁFICOS INTERACTIVOS (Convertidos a Estáticos Visuales para Print) -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const procesos = [
+            /*[# th:each="p : ${bia.procesos}"]*/
+            {
+                nombre: /*[[${p.nombre}]]*/ 'N/A',
+                rto: /*[[${p.rtoHoras}]]*/ 1,
+                criticidad: /*[[${p.criticidad}]]*/ 2,
+                impacto: /*[[${p.impacto}]]*/ 1,
+                probabilidad: /*[[${p.probabilidad}]]*/ 1
+            },
+            /*[/]*/
+        ];
+
+        // RENDER SCATTER
+        const ctx = document.getElementById('pdfChart');
+        if (ctx) {
+            Chart.defaults.font.family = 'Segoe UI';
+            
+            const chartData = procesos.map(p => {
+                let dur = parseInt(p.rto) || 1;
+                let crit = parseInt(p.criticidad) || 2;
+                return { x: dur, y: crit, label: p.nombre, r: 8 }
+            });
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'bubble',
+                data: {
+                    datasets: [{
+                        label: 'Procesos', data: chartData,
+                        backgroundColor: 'rgba(30, 58, 138, 0.7)', borderColor: 'rgb(30, 58, 138)'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    animation: false, // Quitar animacion para impresion PDF instantanea
+                    scales: {
+                        x: { title: { display: true, text: 'RTO (Horas)' }, min: 0 },
+                        y: { title: { display: true, text: 'Criticidad Matenática' }, min: 0, max: 11, ticks: {stepSize: 1} }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // RENDER HEATMAP
+        const hmGrid = document.getElementById('pdf-heatmap');
+        if (hmGrid) {
+            for (let y = 5; y >= 1; y--) {
+                for (let x = 1; x <= 5; x++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'hm-cell';
+                    cell.id = `pdf-hm-${x}-${y}`;
+                    let risk = x * y;
+                    
+                    if (risk >= 15) cell.classList.add('hm-5');
+                    else if (risk >= 10) cell.classList.add('hm-4');
+                    else if (risk >= 6) cell.classList.add('hm-3');
+                    else if (risk >= 4) cell.classList.add('hm-2');
+                    else cell.classList.add('hm-1');
+                    
+                    hmGrid.appendChild(cell);
+                }
+            }
+            
+            procesos.forEach(p => {
+                let crit = p.impacto ? parseInt(p.impacto) : 1;
+                let prob = p.probabilidad ? parseInt(p.probabilidad) : 1;
+                crit = Math.max(1, Math.min(5, crit));
+                prob = Math.max(1, Math.min(5, prob));
+                
+                let targetCell = document.getElementById(`pdf-hm-${prob}-${crit}`);
+                if (targetCell) {
+                    let dot = document.createElement('div');
+                    dot.className = 'process-dot';
+                    let risk = prob * crit;
+                    if (risk >= 15) dot.classList.add('invert'); // Blanco para que se vea sobre el rojo oscuro
+                    targetCell.appendChild(dot);
+                }
+            });
+        }
+        /*]]>*/
+    </script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head>
+    <title th:text="'Dashboard BIA - ' + ${empresa.nombre}">BIA App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container" style="max-width: 1300px;">
+        <header class="header">
+            <a href="/empresas" style="color: var(--primary-color); text-decoration: none; font-size: 0.9rem; float: left; margin-top: 1rem;">&larr; Volver al Hub</a>
+            <h1 th:text="'Centro de Control: ' + ${empresa.nombre}">Nombre de Empresa</h1>
+            <p>Directorio Global de Inventario y Proyectos BIA</p>
+        </header>
+
+        <!-- CONTENEDOR PRINCIPAL (2 COLUMNAS) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+            
+            <!-- PANEL DE PROYECTOS BIA -->
+            <section class="glass-card form-section" style="margin-bottom: 0;">
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" style="margin-right: 8px;"><path d="M2 16V4h20v12"></path><path d="M22 20H2"></path></svg>
+                    Proyectos BIA (Business Impact Analysis)
+                </h2>
+                
+                <form th:action="@{/empresas/{id}/bias/guardar(id=${empresa.id})}" method="post" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="form-grid" style="grid-template-columns: 1fr;">
+                        <input type="text" name="nombre" placeholder="Nombre completo del BIA (ej. BIA Corporativo 2026)" required class="input-modern"/>
+                    </div>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                        <input type="text" name="descripcion" placeholder="Alcance/Descripción" required class="input-modern"/>
+                        <input type="number" name="anio" placeholder="Año (ej. 2026)" value="2026" required class="input-modern"/>
+                    </div>
+                    <button type="submit" class="btn-submit" style="padding: 0.6rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">Crear Nuevo Proyecto BIA</button>
+                </form>
+
+                <div th:if="${empresa.bias != null and !empresa.bias.isEmpty()}">
+                    <div th:each="bia : ${empresa.bias}" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-left: 4px solid #10b981; padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                            <strong th:text="${bia.nombre}" style="display: block; color: white; font-size: 1.1rem;"></strong>
+                            <span class="chip-tech" th:text="${bia.anio}"></span>
+                        </div>
+                        <p th:text="${bia.descripcion}" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;"></p>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);"><span th:text="${bia.procesos.size()}"></span> procesos analizados</span>
+                            <a th:href="@{/empresas/{empresaId}/bias/{biaId}(empresaId=${empresa.id}, biaId=${bia.id})}" class="btn-submit" style="width: auto; padding: 0.4rem 1rem; text-decoration: none; font-size: 0.85rem;">Abrir Dashboard &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${empresa.bias == null or empresa.bias.isEmpty()}" style="text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    No hay proyectos BIA creados todavía. Usa el formulario superior para comenzar tu primera evaluación.
+                </div>
+            </section>
+
+            <!-- COLUMNA DERECHA: PERSONAS Y ACTIVOS -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                
+                <!-- PANEL DE ACTIVOS TECNOLOGICOS -->
+                <section class="glass-card form-section" style="margin-bottom: 0;">
+                    <h2 class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" style="margin-right: 8px;"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+                        Inventario de Ciberactivos
+                    </h2>
+                    
+                    <form th:action="@{/empresas/{id}/activos/guardar(id=${empresa.id})}" method="post" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-grid" style="grid-template-columns: 1fr;">
+                            <input type="text" name="nombre" placeholder="Nombre (ej. ERP Central)" required class="input-modern"/>
+                            <select name="tipo" required class="input-modern" style="background: rgba(0,0,0,0.2) !important;">
+                                <option value="Servidor" style="background: var(--bg-color);">Servidor</option>
+                                <option value="Base de Datos" style="background: var(--bg-color);">Base de Datos</option>
+                                <option value="Aplicación Web" style="background: var(--bg-color);">Aplicación Web</option>
+                                <option value="Infraestructura de Red" style="background: var(--bg-color);">Infraestructura de Red</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-submit" style="padding: 0.6rem;">Añadir Activo</button>
+                    </form>
+
+                    <div th:if="${empresa.activos != null and !empresa.activos.isEmpty()}">
+                        <div th:each="activo : ${empresa.activos}" style="background: rgba(0,0,0,0.2); border-left: 3px solid var(--primary-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 0.5rem;">
+                            <strong th:text="${activo.nombre}" style="display: block; color: white;"></strong>
+                            <span th:text="${activo.tipo}" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PANEL DE PERSONAS CLAVE -->
+                <section class="glass-card form-section" style="margin-bottom: 0;">
+                    <h2 class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" style="margin-right: 8px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        Personal Clave
+                    </h2>
+                    
+                    <form th:action="@{/empresas/{id}/personas/guardar(id=${empresa.id})}" method="post" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-grid" style="grid-template-columns: 1fr;">
+                            <input type="text" name="nombre" placeholder="Nombre completo" required class="input-modern"/>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" name="cargo" placeholder="Cargo" style="flex:1;" required class="input-modern"/>
+                                <input type="text" name="telefono" placeholder="Teléfono" style="flex:1;" required class="input-modern"/>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit" style="padding: 0.6rem;">Añadir Empleado</button>
+                    </form>
+
+                    <div th:if="${empresa.personas != null and !empresa.personas.isEmpty()}">
+                        <div th:each="persona : ${empresa.personas}" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong th:text="${persona.nombre}" style="display: block; color: white;"></strong>
+                                <span th:text="${persona.cargo}" style="font-size: 0.85rem; color: var(--primary-color);"></span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                                📞 <span th:text="${persona.telefono}"></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        .input-modern {
+            background: rgba(0, 0, 0, 0.2) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            padding: 0.75rem 1rem !important;
+            border-radius: 8px !important;
+            font-family: inherit !important;
+            font-size: 1rem !important;
+            transition: all 0.3s ease !important;
+            width: 100%;
+            margin-bottom: 0.5rem;
+            box-sizing: border-box;
+        }
+        .input-modern:focus {
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+            outline: none;
+        }
+        .chip-metric {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #d1d5db;
+        }
+        .chip-dependency {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 500;
+        }
+        .chip-tech {
+            background: rgba(16, 185, 129, 0.15); /* Emerald */
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .chip-person {
+            background: rgba(244, 63, 94, 0.15); /* Rose */
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+    </style>
+</body>
+</html>

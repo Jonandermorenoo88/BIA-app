@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head>
+    <title th:text="'BIA: ' + ${bia.nombre} + ' - ' + ${empresa.nombre}">BIA App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container" style="max-width: 1300px;">
+        <header class="header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <a th:href="@{/empresas/{id}(id=${empresa.id})}"
+                    style="color: var(--primary-color); text-decoration: none; font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">&larr;
+                    Volver a Empresa</a>
+                <h1 th:text="'Evaluación BIA: ' + ${bia.nombre}" style="margin-bottom: 0;">BIA</h1>
+                <p style="margin-top: 5px;">Análisis de Impacto y Mapeo para <span th:text="${empresa.nombre}"></span>
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a th:href="@{/empresas/{empresaId}/bias/{biaId}/informe-ejecutivo(empresaId=${empresa.id}, biaId=${bia.id})}"
+                    class="btn-submit"
+                    style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; padding: 0.8rem 1.5rem; font-weight: bold; border: 1px solid #3b82f6;">
+                    📄 Informe Ejecutivo PDF
+                </a>
+                <a th:href="@{/empresas/{empresaId}/bias/{biaId}/exportar-excel(empresaId=${empresa.id}, biaId=${bia.id})}"
+                    class="btn-submit"
+                    style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; padding: 0.8rem 1.5rem; font-weight: bold;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="8" y1="13" x2="16" y2="13"></line>
+                        <line x1="8" y1="17" x2="16" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Exportar a Excel
+                </a>
+            </div>
+        </header>
+
+        <!-- CONTENEDOR DE GRÁFICOS (2 COLUMNAS) -->
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+            <!-- DASHBOARD DE IMPACTO (CHART) -->
+            <section class="glass-card" style="margin-bottom: 0;">
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)"
+                        stroke-width="2" style="margin-right: 8px;">
+                        <path d="M3 3v18h18" />
+                        <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
+                    </svg>
+                    Matriz (RTO vs Criticidad)
+                </h2>
+                <div style="height: 300px; width: 100%; position: relative;">
+                    <canvas id="impactChart"></canvas>
+                </div>
+            </section>
+
+            <!-- MAPA DE CALOR -->
+            <section class="glass-card" style="margin-bottom: 0;">
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2"
+                        style="margin-right: 8px;">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                    Mapa de Calor (Probabilidad vs Impacto)
+                </h2>
+                <div style="display: flex; height: 300px; padding: 10px 0;">
+                    <!-- Eje Y Text -->
+                    <div
+                        style="writing-mode: vertical-lr; transform: rotate(180deg); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: var(--text-secondary); width: 30px;">
+                        Impacto (Criticidad) &rarr;
+                    </div>
+                    <!-- El grid 5x5 -->
+                    <div id="heatmap-grid" class="heatmap-grid"
+                        style="flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; position: relative;">
+                        <!-- Se generarán por JavaScript -->
+                    </div>
+                </div>
+                <!-- Eje X Text -->
+                <div
+                    style="text-align: center; font-size: 0.8rem; color: var(--text-secondary); padding-left: 30px; padding-bottom: 10px;">
+                    &larr; Probabilidad de Ocurrencia &rarr;
+                </div>
+            </section>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+
+            <!-- PANEL DE PROCESOS CRITICOS -->
+            <section class="glass-card form-section" style="margin-bottom: 0;">
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)"
+                        stroke-width="2" style="margin-right: 8px;">
+                        <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
+                        <line x1="16" y1="8" x2="2" y2="22"></line>
+                        <line x1="17.5" y1="15" x2="9" y2="6.5"></line>
+                    </svg>
+                    Procesos Críticos en este BIA
+                </h2>
+
+                <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/guardar(id=${empresa.id}, biaId=${bia.id})}"
+                    method="post"
+                    style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="form-grid" style="grid-template-columns: 1fr;">
+                        <input type="text" name="nombre" placeholder="Nombre del Proceso" required
+                            class="input-modern" />
+                        <input type="text" name="descripcion" placeholder="Descripción breve" required
+                            class="input-modern" />
+                    </div>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+                        <input type="number" name="rtoHoras" placeholder="RTO (Horas)" required class="input-modern" />
+                        <input type="text" name="rpo" placeholder="RPO (Ej: 15m)" required class="input-modern" />
+                        <select name="impacto" required class="input-modern">
+                            <option value="">Nivel de Impacto</option>
+                            <option value="1">1 - Bajo</option>
+                            <option value="2">2 - Medio</option>
+                            <option value="3">3 - Alto</option>
+                            <option value="4">4 - Muy Alto</option>
+                            <option value="5">5 - Crítico</option>
+                        </select>
+                        <select name="probabilidad" required class="input-modern"
+                            style="border-left: 2px solid #f43f5e !important;">
+                            <option value="">Probabilidad</option>
+                            <option value="1">1 - Rara</option>
+                            <option value="2">2 - Improbable</option>
+                            <option value="3">3 - Posible</option>
+                            <option value="4">4 - Probable</option>
+                            <option value="5">5 - Casi Cierto</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-submit" style="padding: 0.6rem;">Añadir Proceso</button>
+                </form>
+
+                <div th:if="${bia.procesos != null and !bia.procesos.isEmpty()}">
+                    <div th:each="proceso : ${bia.procesos}"
+                        style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <strong th:text="${proceso.nombre}"
+                                style="display: block; color: white; font-size: 1.1rem; margin-bottom: 0.2rem;"></strong>
+                            <div style="display: flex; gap: 0.5rem; flex-direction: column; align-items: flex-end;">
+                                <span
+                                    style="background: var(--primary-color); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; font-weight: bold;"
+                                    th:text="'Criticidad Global ' + ${proceso.criticidad != null ? proceso.criticidad : 'N/A'}"></span>
+                                <span
+                                    style="background: rgba(255,255,255,0.1); color: var(--text-secondary); border-radius: 12px; padding: 2px 8px; font-size: 0.70rem;"
+                                    th:text="'Impacto ' + ${proceso.impacto != null ? proceso.impacto : 'N/A'} + ' / Prob ' + ${proceso.probabilidad != null ? proceso.probabilidad : 'N/A'}"></span>
+                            </div>
+                        </div>
+                        <span th:text="${proceso.descripcion}"
+                            style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.8rem;"></span>
+
+                        <div style="display: flex; gap: 1rem; font-size: 0.8rem; margin-bottom: 1rem;">
+                            <span class="chip-metric">RTO: <span th:text="${proceso.rtoHoras} + ' Horas'"></span></span>
+                            <span class="chip-metric">RPO: <span th:text="${proceso.rpo}"></span></span>
+                        </div>
+
+                        <!-- DEPENDENCIES (CHIPS) -->
+                        <div style="margin-bottom: 1rem;">
+                            <p
+                                style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                                Dependencias Activas:</p>
+
+                            <!-- Activos Linked -->
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span th:each="activoL : ${proceso.activos}" class="chip-dependency chip-tech">
+                                    💻 <span th:text="${activoL.nombre}"></span>
+                                </span>
+                                <!-- Personas Linked -->
+                                <span th:each="personaL : ${proceso.personas}" class="chip-dependency chip-person">
+                                    👤 <span th:text="${personaL.nombre}"></span>
+                                </span>
+                            </div>
+                            <span
+                                th:if="${(proceso.activos == null or proceso.activos.isEmpty()) and (proceso.personas == null or proceso.personas.isEmpty())}"
+                                style="font-size: 0.8rem; color: #666; font-style: italic;">Sin dependencias
+                                mapeadas</span>
+                        </div>
+
+                        <!-- LINKING FORMS -->
+                        <div style="display: flex; gap: 0.5rem;"
+                            th:if="${empresa.activos.size() > 0 or empresa.personas.size() > 0}">
+                            <!-- Link Activo -->
+                            <form th:if="${empresa.activos.size() > 0}"
+                                th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/vincular-activo(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
+                                method="post" style="flex: 1; display:flex; gap: 0.2rem;">
+                                <select name="idActivo" required class="input-modern"
+                                    style="padding: 0.4rem; font-size: 0.8rem; margin: 0; background: rgba(0,0,0,0.5) !important;">
+                                    <option value="" disabled selected>Vincular Ciberactivo...</option>
+                                    <option th:each="act : ${empresa.activos}" th:value="${act.id}"
+                                        th:text="${act.nombre}"></option>
+                                </select>
+                                <button type="submit" class="btn-submit"
+                                    style="padding: 0 0.5rem; width: auto; font-size: 0.9rem;">+</button>
+                            </form>
+
+                            <!-- Link Persona -->
+                            <form th:if="${empresa.personas.size() > 0}"
+                                th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/vincular-persona(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
+                                method="post" style="flex: 1; display:flex; gap: 0.2rem;">
+                                <select name="idPersona" required class="input-modern"
+                                    style="padding: 0.4rem; font-size: 0.8rem; margin: 0; background: rgba(0,0,0,0.5) !important;">
+                                    <option value="" disabled selected>Vincular Persona...</option>
+                                    <option th:each="per : ${empresa.personas}" th:value="${per.id}"
+                                        th:text="${per.nombre}"></option>
+                                </select>
+                                <button type="submit" class="btn-submit"
+                                    style="padding: 0 0.5rem; width: auto; font-size: 0.9rem;">+</button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- COLUMNA DERECHA: PERSONAS Y ACTIVOS -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+
+                <!-- INVENTARIO INFORMATIVO -->
+                <section class="glass-card form-section" style="margin-bottom: 0;">
+                    <h2 class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)"
+                            stroke-width="2" style="margin-right: 8px;">
+                            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                            <rect x="9" y="9" width="6" height="6"></rect>
+                            <line x1="9" y1="1" x2="9" y2="4"></line>
+                            <line x1="15" y1="1" x2="15" y2="4"></line>
+                        </svg>
+                        Inventario Global Disponible
+                    </h2>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">Inventario
+                        configurado desde el perfil de la Empresa y disponible para este BIA.</p>
+
+                    <h3 style="font-size: 0.9rem; color: #fff; margin-bottom: 0.5rem;">Ciberactivos (<span
+                            th:text="${empresa.activos.size()}"></span>)</h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;">
+                        <span th:each="activo : ${empresa.activos}" class="chip-metric">
+                            💻 <span th:text="${activo.nombre}"></span>
+                        </span>
+                    </div>
+
+                    <h3 style="font-size: 0.9rem; color: #fff; margin-bottom: 0.5rem;">Personal Clave (<span
+                            th:text="${empresa.personas.size()}"></span>)</h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        <span th:each="persona : ${empresa.personas}" class="chip-metric">
+                            👤 <span th:text="${persona.nombre}"></span>
+                        </span>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .input-modern {
+            background: rgba(0, 0, 0, 0.2) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            padding: 0.75rem 1rem !important;
+            border-radius: 8px !important;
+            font-family: inherit !important;
+            font-size: 1rem !important;
+            transition: all 0.3s ease !important;
+            width: 100%;
+            margin-bottom: 0.5rem;
+            box-sizing: border-box;
+        }
+
+        .input-modern:focus {
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+            outline: none;
+        }
+
+        .chip-metric {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #d1d5db;
+        }
+
+        .chip-dependency {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .chip-tech {
+            background: rgba(16, 185, 129, 0.15);
+            /* Emerald */
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .chip-person {
+            background: rgba(244, 63, 94, 0.15);
+            /* Rose */
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        /* HEATMAP CLASSES */
+        .heatmap-grid {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .hm-cell {
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            position: relative;
+            overflow: visible;
+        }
+
+        .hm-bg-1 {
+            background-color: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        /* Green */
+        .hm-bg-2 {
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* Light Green */
+        .hm-bg-3 {
+            background-color: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        /* Yellow/Amber */
+        .hm-bg-4 {
+            background-color: rgba(244, 63, 94, 0.3);
+            border: 1px solid rgba(244, 63, 94, 0.5);
+        }
+
+        /* Redish */
+        .hm-bg-5 {
+            background-color: rgba(225, 29, 72, 0.6);
+            border: 1px solid rgba(225, 29, 72, 1);
+        }
+
+        /* Dark Red */
+
+        .hm-pill {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #000;
+            font-size: 0.65rem;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 8px;
+            max-width: 90%;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .hm-pill:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+    </style>
+
+    <!-- Script to render Chart.js Matriz de Riesgo -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        // Inicialización segura para evitar problemas de Jackson con proxies JPA
+        const procesos = [
+            /*[# th:each="p : ${bia.procesos}"]*/
+            {
+                nombre: /*[[${p.nombre}]]*/ 'N/A',
+                rto: /*[[${p.rtoHoras}]]*/ 1,
+                criticidad: /*[[${p.criticidad}]]*/ 2,
+                impacto: /*[[${p.impacto}]]*/ 1,
+                probabilidad: /*[[${p.probabilidad}]]*/ 1
+            },
+            /*[/]*/
+        ];
+
+        // Formatear datos para el Scatter Chart.
+        const chartData = procesos.map((p, index) => {
+            let duration = p.rto ? parseInt(p.rto) : 1;
+            let finalCrit = p.criticidad ? parseInt(p.criticidad) : 2;
+
+            return {
+                x: duration,
+                y: finalCrit,
+                label: p.nombre,
+                r: Math.min(finalCrit * 3 + 6, 30) // Size prop to criticidad
+            }
+        });
+
+        const ctx = document.getElementById('impactChart');
+        if (ctx) {
+            // Configurar tema oscuro y colores vibrantes de Chart.js
+            Chart.defaults.color = '#8b949e';
+            Chart.defaults.font.family = 'Inter';
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'bubble',
+                data: {
+                    datasets: [{
+                        label: 'Procesos Críticos',
+                        data: chartData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        hoverBackgroundColor: 'rgba(139, 92, 246, 0.8)',
+                        hoverBorderColor: 'rgba(139, 92, 246, 1)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            title: { display: true, text: 'RTO Estimado (Eje X)' },
+                            beginAtZero: true
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            title: { display: true, text: 'Criticidad Automática (2 a 10)' },
+                            min: 0,
+                            max: 11,
+                            ticks: { stepSize: 1 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(22, 27, 34, 0.9)',
+                            titleColor: '#fff',
+                            bodyColor: '#e6edf3',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            callbacks: {
+                                label: function (context) {
+                                    return context.raw.label + ' (Criticidad ' + context.raw.y + ')';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // BUILD HEATMAP GRID
+        const heatmapElement = document.getElementById('heatmap-grid');
+        if (heatmapElement) {
+            // Generate 25 cells (5x5). CSS grid fills row by row.
+            // X = Probabilidad (1 to 5, left to right)
+            // Y = Criticidad/Impacto (5 to 1, top to bottom).
+
+            // So row 1: y=5, x=1..5
+            for (let y = 5; y >= 1; y--) {
+                for (let x = 1; x <= 5; x++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'hm-cell';
+                    cell.id = `hm-cell-${x}-${y}`;
+
+                    // Determine color gradient based on Risk (x * y)
+                    let risk = x * y;
+                    if (risk >= 15) cell.classList.add('hm-bg-5');
+                    else if (risk >= 10) cell.classList.add('hm-bg-4');
+                    else if (risk >= 6) cell.classList.add('hm-bg-3');
+                    else if (risk >= 4) cell.classList.add('hm-bg-2');
+                    else cell.classList.add('hm-bg-1');
+
+                    heatmapElement.appendChild(cell);
+                }
+            }
+
+            // Distribute Processes into cells
+            procesos.forEach(p => {
+                let crit = p.impacto ? parseInt(p.impacto) : 1; // Heatmap usa IMPACTO!
+                let prob = p.probabilidad ? parseInt(p.probabilidad) : 1;
+
+                // Boundaries validation
+                crit = Math.max(1, Math.min(5, crit));
+                prob = Math.max(1, Math.min(5, prob));
+
+                let targetCell = document.getElementById(`hm-cell-${prob}-${crit}`);
+                if (targetCell) {
+                    let pill = document.createElement('div');
+                    pill.className = 'hm-pill';
+                    pill.title = p.nombre;
+                    pill.innerText = p.nombre.length > 10 ? p.nombre.substring(0, 8) + '...' : p.nombre;
+                    targetCell.appendChild(pill);
+                }
+            });
+        }
+        /*]]>*/
+    </script>
+</body>
+
+</html>
