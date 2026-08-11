@@ -35,6 +35,8 @@ public class ActivosService {
         this.biaRepository = biaRepository;
     }
 
+    // ===== PROCESOS =====
+
     public void guardarProcesoCritico(Long idBia, ProcesoCritico proceso) {
         BiaProyecto bia = biaRepository.findById(idBia)
                 .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
@@ -43,12 +45,41 @@ public class ActivosService {
         procesoRepository.save(proceso);
     }
 
+    public void editarProceso(Long idProceso, ProcesoCritico datos) {
+        ProcesoCritico proceso = procesoRepository.findById(idProceso)
+                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
+        proceso.setNombre(datos.getNombre());
+        proceso.setDescripcion(datos.getDescripcion());
+        proceso.setRtoHoras(datos.getRtoHoras());
+        proceso.setRpo(datos.getRpo());
+        proceso.setImpacto(datos.getImpacto());
+        proceso.setProbabilidad(datos.getProbabilidad());
+        proceso.calcularYSetearCriticidad();
+        procesoRepository.save(proceso);
+    }
+
+    public void eliminarProceso(Long idProceso) {
+        ProcesoCritico proceso = procesoRepository.findById(idProceso)
+                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
+        procesoRepository.delete(proceso);
+    }
+
+    // ===== BIA PROYECTOS =====
+
     public void crearBiaProyecto(Long idEmpresa, BiaProyecto bia) {
         Empresa empresa = empresaRepository.findById(idEmpresa)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
         bia.setEmpresa(empresa);
         biaRepository.save(bia);
     }
+
+    public void eliminarBiaProyecto(Long idBia) {
+        BiaProyecto bia = biaRepository.findById(idBia)
+                .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
+        biaRepository.delete(bia);
+    }
+
+    // ===== PERSONAS =====
 
     public void guardarPersona(Long idEmpresa, Persona persona) {
         Empresa empresa = empresaRepository.findById(idEmpresa)
@@ -57,12 +88,24 @@ public class ActivosService {
         personaRepository.save(persona);
     }
 
+    public void eliminarPersona(Long idPersona) {
+        personaRepository.deleteById(idPersona);
+    }
+
+    // ===== ACTIVOS =====
+
     public void guardarActivoTecnologico(Long idEmpresa, ActivoTecnologico activo) {
         Empresa empresa = empresaRepository.findById(idEmpresa)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
         activo.setEmpresa(empresa);
         activoRepository.save(activo);
     }
+
+    public void eliminarActivo(Long idActivo) {
+        activoRepository.deleteById(idActivo);
+    }
+
+    // ===== VINCULACIÓN / DESVINCULACIÓN =====
 
     public void vincularActivoAProceso(Long idProceso, Long idActivo) {
         ProcesoCritico proceso = procesoRepository.findById(idProceso)
@@ -76,6 +119,13 @@ public class ActivosService {
         }
     }
 
+    public void desvincularActivoDeProceso(Long idProceso, Long idActivo) {
+        ProcesoCritico proceso = procesoRepository.findById(idProceso)
+                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
+        proceso.getActivos().removeIf(a -> a.getId().equals(idActivo));
+        procesoRepository.save(proceso);
+    }
+
     public void vincularPersonaAProceso(Long idProceso, Long idPersona) {
         ProcesoCritico proceso = procesoRepository.findById(idProceso)
                 .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
@@ -86,5 +136,12 @@ public class ActivosService {
             proceso.getPersonas().add(persona);
             procesoRepository.save(proceso);
         }
+    }
+
+    public void desvincularPersonaDeProceso(Long idProceso, Long idPersona) {
+        ProcesoCritico proceso = procesoRepository.findById(idProceso)
+                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
+        proceso.getPersonas().removeIf(p -> p.getId().equals(idPersona));
+        procesoRepository.save(proceso);
     }
 }

@@ -1,6 +1,7 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,9 +12,13 @@ public class Empresa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
+
+    @NotBlank(message = "El sector es obligatorio")
     private String sector;
 
+    @NotBlank(message = "El tamaño es obligatorio")
     @Column(name = "tamano")
     private String tamano;
 

@@ -11,9 +11,17 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>Gestion de Empresas</h1>
+            <h1>Gestión de Empresas</h1>
             <p>Administra tus empresas y sus procesos de negocio</p>
         </header>
+
+        <!-- FLASH MESSAGES -->
+        <div th:if="${flashSuccess}" class="flash-message flash-success">
+            ✅ <span th:text="${flashSuccess}"></span>
+        </div>
+        <div th:if="${flashError}" class="flash-message flash-error">
+            ❌ <span th:text="${flashError}"></span>
+        </div>
 
         <section class="glass-card form-section">
             <h2 class="section-title">Registrar Nueva Empresa</h2>
@@ -41,7 +49,17 @@
 
             <div class="company-grid" th:if="${empresas != null and !empresas.isEmpty()}">
                 <article class="company-card" th:each="empresa : ${empresas}">
-                    <h3 class="company-name" th:text="${empresa.nombre}">Nombre Empresa</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h3 class="company-name" th:text="${empresa.nombre}">Nombre Empresa</h3>
+                        <div class="action-buttons">
+                            <button class="btn-icon" type="button"
+                                    th:onclick="'toggleEdit(' + ${empresa.id} + ')'">✏️</button>
+                            <form th:action="@{/empresas/{id}/eliminar(id=${empresa.id})}" method="post"
+                                  style="margin: 0;" onsubmit="return confirm('¿Eliminar esta empresa y TODOS sus datos asociados (BIAs, procesos, activos, personas)? Esta acción no se puede deshacer.')">
+                                <button type="submit" class="btn-icon danger">🗑️</button>
+                            </form>
+                        </div>
+                    </div>
                     <div class="company-details">
                         <div class="detail-item">
                             <span class="detail-icon">
@@ -67,6 +85,20 @@
                                 th:text="${empresa.tamano}">Tamaño</strong>
                         </div>
                     </div>
+
+                    <!-- EDIT FORM (hidden by default) -->
+                    <div th:id="'edit-' + ${empresa.id}" style="display: none; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                        <form th:action="@{/empresas/{id}/editar(id=${empresa.id})}" method="post">
+                            <input type="text" name="nombre" th:value="${empresa.nombre}" required class="input-modern" placeholder="Nombre" />
+                            <input type="text" name="sector" th:value="${empresa.sector}" required class="input-modern" placeholder="Sector" />
+                            <input type="text" name="tamano" th:value="${empresa.tamano}" required class="input-modern" placeholder="Tamaño" />
+                            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                <button type="submit" class="btn-edit" style="flex: 1;">Guardar</button>
+                                <button type="button" class="btn-icon" th:onclick="'toggleEdit(' + ${empresa.id} + ')'">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+
                     <a th:href="@{/empresas/{id}(id=${empresa.id})}" class="btn-submit"
                         style="display: block; text-align: center; margin-top: 1.5rem; text-decoration: none; font-size: 0.9rem; padding: 0.6rem 1rem;">Ver
                         Dashboard BIA</a>
@@ -86,6 +118,13 @@
             </div>
         </section>
     </div>
+
+    <script>
+        function toggleEdit(id) {
+            const el = document.getElementById('edit-' + id);
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
 </body>
 
 </html>

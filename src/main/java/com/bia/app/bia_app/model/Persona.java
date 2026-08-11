@@ -1,6 +1,7 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
 
 @Entity
@@ -10,8 +11,13 @@ public class Persona {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
+
+    @NotBlank(message = "El cargo es obligatorio")
     private String cargo;
+
+    @NotBlank(message = "El teléfono es obligatorio")
     private String telefono;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -68,7 +74,6 @@ public class Persona {
 
     @Override
     public int hashCode() {
-        // Constante para evitar que el hash cambie al persistir (id pasa de null a un valor)
         return getClass().hashCode();
     }
 }

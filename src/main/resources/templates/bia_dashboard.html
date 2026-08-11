@@ -42,6 +42,14 @@
             </div>
         </header>
 
+        <!-- FLASH MESSAGES -->
+        <div th:if="${flashSuccess}" class="flash-message flash-success">
+            ✅ <span th:text="${flashSuccess}"></span>
+        </div>
+        <div th:if="${flashError}" class="flash-message flash-error">
+            ❌ <span th:text="${flashError}"></span>
+        </div>
+
         <!-- CONTENEDOR DE GRÁFICOS (2 COLUMNAS) -->
         <div
             style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
@@ -113,7 +121,7 @@
                             class="input-modern" />
                     </div>
                     <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
-                        <input type="number" name="rtoHoras" placeholder="RTO (Horas)" required class="input-modern" />
+                        <input type="number" name="rtoHoras" placeholder="RTO (Horas)" min="0" required class="input-modern" />
                         <input type="text" name="rpo" placeholder="RPO (Ej: 15m)" required class="input-modern" />
                         <select name="impacto" required class="input-modern">
                             <option value="">Nivel de Impacto</option>
@@ -142,21 +150,58 @@
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <strong th:text="${proceso.nombre}"
                                 style="display: block; color: white; font-size: 1.1rem; margin-bottom: 0.2rem;"></strong>
-                            <div style="display: flex; gap: 0.5rem; flex-direction: column; align-items: flex-end;">
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
                                 <span
                                     style="background: var(--primary-color); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; font-weight: bold;"
-                                    th:text="'Criticidad Global ' + ${proceso.criticidad != null ? proceso.criticidad : 'N/A'}"></span>
-                                <span
-                                    style="background: rgba(255,255,255,0.1); color: var(--text-secondary); border-radius: 12px; padding: 2px 8px; font-size: 0.70rem;"
-                                    th:text="'Impacto ' + ${proceso.impacto != null ? proceso.impacto : 'N/A'} + ' / Prob ' + ${proceso.probabilidad != null ? proceso.probabilidad : 'N/A'}"></span>
+                                    th:text="'Criticidad ' + ${proceso.criticidad != null ? proceso.criticidad : 'N/A'}"></span>
+                                <button class="btn-icon" type="button"
+                                        th:onclick="'toggleEdit(' + ${proceso.id} + ')'" title="Editar">✏️</button>
+                                <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/eliminar(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
+                                      method="post" style="margin: 0;"
+                                      onsubmit="return confirm('¿Eliminar este proceso y todas sus dependencias vinculadas?')">
+                                    <button type="submit" class="btn-icon danger" title="Eliminar">🗑️</button>
+                                </form>
                             </div>
                         </div>
                         <span th:text="${proceso.descripcion}"
                             style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.8rem;"></span>
 
-                        <div style="display: flex; gap: 1rem; font-size: 0.8rem; margin-bottom: 1rem;">
+                        <div style="display: flex; gap: 1rem; font-size: 0.8rem; margin-bottom: 0.5rem;">
                             <span class="chip-metric">RTO: <span th:text="${proceso.rtoHoras} + ' Horas'"></span></span>
                             <span class="chip-metric">RPO: <span th:text="${proceso.rpo}"></span></span>
+                            <span class="chip-metric" style="font-size: 0.7rem;" th:text="'Imp ' + ${proceso.impacto != null ? proceso.impacto : 'N/A'} + ' / Prob ' + ${proceso.probabilidad != null ? proceso.probabilidad : 'N/A'}"></span>
+                        </div>
+
+                        <!-- EDIT FORM (hidden by default) -->
+                        <div th:id="'edit-' + ${proceso.id}" style="display: none; margin: 0.75rem 0; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                            <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/editar(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}" method="post">
+                                <div class="form-grid" style="grid-template-columns: 1fr;">
+                                    <input type="text" name="nombre" th:value="${proceso.nombre}" required class="input-modern" />
+                                    <input type="text" name="descripcion" th:value="${proceso.descripcion}" required class="input-modern" />
+                                </div>
+                                <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+                                    <input type="number" name="rtoHoras" th:value="${proceso.rtoHoras}" min="0" required class="input-modern" />
+                                    <input type="text" name="rpo" th:value="${proceso.rpo}" required class="input-modern" />
+                                    <select name="impacto" required class="input-modern">
+                                        <option value="1" th:selected="${proceso.impacto == 1}">1 - Bajo</option>
+                                        <option value="2" th:selected="${proceso.impacto == 2}">2 - Medio</option>
+                                        <option value="3" th:selected="${proceso.impacto == 3}">3 - Alto</option>
+                                        <option value="4" th:selected="${proceso.impacto == 4}">4 - Muy Alto</option>
+                                        <option value="5" th:selected="${proceso.impacto == 5}">5 - Crítico</option>
+                                    </select>
+                                    <select name="probabilidad" required class="input-modern">
+                                        <option value="1" th:selected="${proceso.probabilidad == 1}">1 - Rara</option>
+                                        <option value="2" th:selected="${proceso.probabilidad == 2}">2 - Improbable</option>
+                                        <option value="3" th:selected="${proceso.probabilidad == 3}">3 - Posible</option>
+                                        <option value="4" th:selected="${proceso.probabilidad == 4}">4 - Probable</option>
+                                        <option value="5" th:selected="${proceso.probabilidad == 5}">5 - Casi Cierto</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button type="submit" class="btn-edit" style="flex: 1;">Guardar Cambios</button>
+                                    <button type="button" class="btn-icon" th:onclick="'toggleEdit(' + ${proceso.id} + ')'">Cancelar</button>
+                                </div>
+                            </form>
                         </div>
 
                         <!-- DEPENDENCIES (CHIPS) -->
@@ -167,12 +212,24 @@
 
                             <!-- Activos Linked -->
                             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                <span th:each="activoL : ${proceso.activos}" class="chip-dependency chip-tech">
+                                <span th:each="activoL : ${proceso.activos}" class="chip-dependency chip-tech" style="display: inline-flex; align-items: center; gap: 4px;">
                                     💻 <span th:text="${activoL.nombre}"></span>
+                                    <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/desvincular-activo(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
+                                          method="post" style="margin: 0; display: inline;"
+                                          onsubmit="return confirm('¿Desvincular este activo del proceso?')">
+                                        <input type="hidden" name="idActivo" th:value="${activoL.id}" />
+                                        <button type="submit" style="background: none; border: none; color: #fb7185; cursor: pointer; font-size: 0.7rem; padding: 0 2px;" title="Desvincular">✕</button>
+                                    </form>
                                 </span>
                                 <!-- Personas Linked -->
-                                <span th:each="personaL : ${proceso.personas}" class="chip-dependency chip-person">
+                                <span th:each="personaL : ${proceso.personas}" class="chip-dependency chip-person" style="display: inline-flex; align-items: center; gap: 4px;">
                                     👤 <span th:text="${personaL.nombre}"></span>
+                                    <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/desvincular-persona(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
+                                          method="post" style="margin: 0; display: inline;"
+                                          onsubmit="return confirm('¿Desvincular esta persona del proceso?')">
+                                        <input type="hidden" name="idPersona" th:value="${personaL.id}" />
+                                        <button type="submit" style="background: none; border: none; color: #fb7185; cursor: pointer; font-size: 0.7rem; padding: 0 2px;" title="Desvincular">✕</button>
+                                    </form>
                                 </span>
                             </div>
                             <span
@@ -217,10 +274,9 @@
                 </div>
             </section>
 
-            <!-- COLUMNA DERECHA: PERSONAS Y ACTIVOS -->
+            <!-- COLUMNA DERECHA: INVENTARIO INFORMATIVO -->
             <div style="display: flex; flex-direction: column; gap: 2rem;">
 
-                <!-- INVENTARIO INFORMATIVO -->
                 <section class="glass-card form-section" style="margin-bottom: 0;">
                     <h2 class="section-title">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)"
@@ -275,36 +331,11 @@
             overflow: visible;
         }
 
-        .hm-bg-1 {
-            background-color: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-        }
-
-        /* Green */
-        .hm-bg-2 {
-            background-color: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        /* Light Green */
-        .hm-bg-3 {
-            background-color: rgba(245, 158, 11, 0.2);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-        }
-
-        /* Yellow/Amber */
-        .hm-bg-4 {
-            background-color: rgba(244, 63, 94, 0.3);
-            border: 1px solid rgba(244, 63, 94, 0.5);
-        }
-
-        /* Redish */
-        .hm-bg-5 {
-            background-color: rgba(225, 29, 72, 0.6);
-            border: 1px solid rgba(225, 29, 72, 1);
-        }
-
-        /* Dark Red */
+        .hm-bg-1 { background-color: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); }
+        .hm-bg-2 { background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .hm-bg-3 { background-color: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); }
+        .hm-bg-4 { background-color: rgba(244, 63, 94, 0.3); border: 1px solid rgba(244, 63, 94, 0.5); }
+        .hm-bg-5 { background-color: rgba(225, 29, 72, 0.6); border: 1px solid rgba(225, 29, 72, 1); }
 
         .hm-pill {
             background-color: rgba(255, 255, 255, 0.9);
@@ -328,10 +359,16 @@
         }
     </style>
 
+    <script>
+        function toggleEdit(id) {
+            const el = document.getElementById('edit-' + id);
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+
     <!-- Script to render Chart.js Matriz de Riesgo -->
     <script th:inline="javascript">
         /*<![CDATA[*/
-        // Inicialización segura para evitar problemas de Jackson con proxies JPA
         const procesos = [
             /*[# th:each="p : ${bia.procesos}"]*/
             {
@@ -353,13 +390,12 @@
                 x: duration,
                 y: finalCrit,
                 label: p.nombre,
-                r: Math.min(finalCrit * 3 + 6, 30) // Size prop to criticidad
+                r: Math.min(finalCrit * 3 + 6, 30)
             }
         });
 
         const ctx = document.getElementById('impactChart');
         if (ctx) {
-            // Configurar tema oscuro y colores vibrantes de Chart.js
             Chart.defaults.color = '#8b949e';
             Chart.defaults.font.family = 'Inter';
 
@@ -416,18 +452,12 @@
         // BUILD HEATMAP GRID
         const heatmapElement = document.getElementById('heatmap-grid');
         if (heatmapElement) {
-            // Generate 25 cells (5x5). CSS grid fills row by row.
-            // X = Probabilidad (1 to 5, left to right)
-            // Y = Criticidad/Impacto (5 to 1, top to bottom).
-
-            // So row 1: y=5, x=1..5
             for (let y = 5; y >= 1; y--) {
                 for (let x = 1; x <= 5; x++) {
                     let cell = document.createElement('div');
                     cell.className = 'hm-cell';
                     cell.id = `hm-cell-${x}-${y}`;
 
-                    // Determine color gradient based on Risk (x * y)
                     let risk = x * y;
                     if (risk >= 15) cell.classList.add('hm-bg-5');
                     else if (risk >= 10) cell.classList.add('hm-bg-4');
@@ -439,12 +469,10 @@
                 }
             }
 
-            // Distribute Processes into cells
             procesos.forEach(p => {
-                let crit = p.impacto ? parseInt(p.impacto) : 1; // Heatmap usa IMPACTO!
+                let crit = p.impacto ? parseInt(p.impacto) : 1;
                 let prob = p.probabilidad ? parseInt(p.probabilidad) : 1;
 
-                // Boundaries validation
                 crit = Math.max(1, Math.min(5, crit));
                 prob = Math.max(1, Math.min(5, prob));
 

@@ -1,8 +1,11 @@
 package com.bia.app.bia_app.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -82,7 +85,6 @@ public class BiaDashboardController {
         BiaProyecto bia = biaRepository.findById(biaId)
                 .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
 
-        // Lógica de análisis delegada al servicio
         BiaResumen resumen = biaAnalysisService.calcularResumen(bia);
 
         model.addAttribute("empresa", empresa);
@@ -97,21 +99,68 @@ public class BiaDashboardController {
     }
 
     @PostMapping("/{biaId}/procesos/guardar")
-    public String guardarProceso(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId, ProcesoCritico proceso) {
+    public String guardarProceso(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId,
+                                 @Valid ProcesoCritico proceso, BindingResult result, RedirectAttributes flash) {
+        if (result.hasErrors()) {
+            flash.addFlashAttribute("flashError", "Error: " + result.getFieldError().getDefaultMessage());
+            return "redirect:/empresas/" + empresaId + "/bias/" + biaId;
+        }
         proceso.setId(null);
         activosService.guardarProcesoCritico(biaId, proceso);
+        flash.addFlashAttribute("flashSuccess", "Proceso '" + proceso.getNombre() + "' creado correctamente");
+        return "redirect:/empresas/" + empresaId + "/bias/" + biaId;
+    }
+
+    @PostMapping("/{biaId}/procesos/{idProceso}/editar")
+    public String editarProceso(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId,
+                                @PathVariable("idProceso") Long idProceso,
+                                @Valid ProcesoCritico proceso, BindingResult result, RedirectAttributes flash) {
+        if (result.hasErrors()) {
+            flash.addFlashAttribute("flashError", "Error: " + result.getFieldError().getDefaultMessage());
+            return "redirect:/empresas/" + empresaId + "/bias/" + biaId;
+        }
+        activosService.editarProceso(idProceso, proceso);
+        flash.addFlashAttribute("flashSuccess", "Proceso '" + proceso.getNombre() + "' actualizado correctamente");
+        return "redirect:/empresas/" + empresaId + "/bias/" + biaId;
+    }
+
+    @PostMapping("/{biaId}/procesos/{idProceso}/eliminar")
+    public String eliminarProceso(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId,
+                                  @PathVariable("idProceso") Long idProceso, RedirectAttributes flash) {
+        activosService.eliminarProceso(idProceso);
+        flash.addFlashAttribute("flashSuccess", "Proceso eliminado correctamente");
         return "redirect:/empresas/" + empresaId + "/bias/" + biaId;
     }
 
     @PostMapping("/{biaId}/procesos/{idProceso}/vincular-activo")
-    public String vincularActivo(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId, @PathVariable Long idProceso, @RequestParam Long idActivo) {
+    public String vincularActivo(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId,
+                                 @PathVariable Long idProceso, @RequestParam Long idActivo, RedirectAttributes flash) {
         activosService.vincularActivoAProceso(idProceso, idActivo);
+        flash.addFlashAttribute("flashSuccess", "Activo vinculado correctamente");
+        return "redirect:/empresas/" + empresaId + "/bias/" + biaId;
+    }
+
+    @PostMapping("/{biaId}/procesos/{idProceso}/desvincular-activo")
+    public String desvincularActivo(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId,
+                                    @PathVariable Long idProceso, @RequestParam Long idActivo, RedirectAttributes flash) {
+        activosService.desvincularActivoDeProceso(idProceso, idActivo);
+        flash.addFlashAttribute("flashSuccess", "Activo desvinculado correctamente");
         return "redirect:/empresas/" + empresaId + "/bias/" + biaId;
     }
 
     @PostMapping("/{biaId}/procesos/{idProceso}/vincular-persona")
-    public String vincularPersona(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId, @PathVariable Long idProceso, @RequestParam Long idPersona) {
+    public String vincularPersona(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId,
+                                  @PathVariable Long idProceso, @RequestParam Long idPersona, RedirectAttributes flash) {
         activosService.vincularPersonaAProceso(idProceso, idPersona);
+        flash.addFlashAttribute("flashSuccess", "Persona vinculada correctamente");
+        return "redirect:/empresas/" + empresaId + "/bias/" + biaId;
+    }
+
+    @PostMapping("/{biaId}/procesos/{idProceso}/desvincular-persona")
+    public String desvincularPersona(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId,
+                                     @PathVariable Long idProceso, @RequestParam Long idPersona, RedirectAttributes flash) {
+        activosService.desvincularPersonaDeProceso(idProceso, idPersona);
+        flash.addFlashAttribute("flashSuccess", "Persona desvinculada correctamente");
         return "redirect:/empresas/" + empresaId + "/bias/" + biaId;
     }
 }

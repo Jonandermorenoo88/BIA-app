@@ -18,6 +18,14 @@
             <p>Directorio Global de Inventario y Proyectos BIA</p>
         </header>
 
+        <!-- FLASH MESSAGES -->
+        <div th:if="${flashSuccess}" class="flash-message flash-success">
+            ✅ <span th:text="${flashSuccess}"></span>
+        </div>
+        <div th:if="${flashError}" class="flash-message flash-error">
+            ❌ <span th:text="${flashError}"></span>
+        </div>
+
         <!-- CONTENEDOR PRINCIPAL (2 COLUMNAS) -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
             
@@ -43,7 +51,13 @@
                     <div th:each="bia : ${empresa.bias}" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-left: 4px solid #10b981; padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
                             <strong th:text="${bia.nombre}" style="display: block; color: white; font-size: 1.1rem;"></strong>
-                            <span class="chip-tech" th:text="${bia.anio}"></span>
+                            <div class="action-buttons">
+                                <span class="chip-tech" th:text="${bia.anio}"></span>
+                                <form th:action="@{/empresas/{empresaId}/bias/{biaId}/eliminar(empresaId=${empresa.id}, biaId=${bia.id})}" method="post" style="margin: 0;"
+                                      onsubmit="return confirm('¿Eliminar este proyecto BIA y TODOS sus procesos? Esta acción no se puede deshacer.')">
+                                    <button type="submit" class="btn-icon danger" title="Eliminar BIA">🗑️</button>
+                                </form>
+                            </div>
                         </div>
                         <p th:text="${bia.descripcion}" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;"></p>
                         
@@ -82,9 +96,15 @@
                     </form>
 
                     <div th:if="${empresa.activos != null and !empresa.activos.isEmpty()}">
-                        <div th:each="activo : ${empresa.activos}" style="background: rgba(0,0,0,0.2); border-left: 3px solid var(--primary-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 0.5rem;">
-                            <strong th:text="${activo.nombre}" style="display: block; color: white;"></strong>
-                            <span th:text="${activo.tipo}" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+                        <div th:each="activo : ${empresa.activos}" style="background: rgba(0,0,0,0.2); border-left: 3px solid var(--primary-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong th:text="${activo.nombre}" style="display: block; color: white;"></strong>
+                                <span th:text="${activo.tipo}" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+                            </div>
+                            <form th:action="@{/empresas/{empresaId}/activos/{activoId}/eliminar(empresaId=${empresa.id}, activoId=${activo.id})}" method="post" style="margin: 0;"
+                                  onsubmit="return confirm('¿Eliminar este activo tecnológico?')">
+                                <button type="submit" class="btn-icon danger" title="Eliminar activo">🗑️</button>
+                            </form>
                         </div>
                     </div>
                 </section>
@@ -113,8 +133,14 @@
                                 <strong th:text="${persona.nombre}" style="display: block; color: white;"></strong>
                                 <span th:text="${persona.cargo}" style="font-size: 0.85rem; color: var(--primary-color);"></span>
                             </div>
-                            <div style="font-size: 0.85rem; color: var(--text-secondary);">
-                                📞 <span th:text="${persona.telefono}"></span>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                                    📞 <span th:text="${persona.telefono}"></span>
+                                </div>
+                                <form th:action="@{/empresas/{empresaId}/personas/{personaId}/eliminar(empresaId=${empresa.id}, personaId=${persona.id})}" method="post" style="margin: 0;"
+                                      onsubmit="return confirm('¿Eliminar esta persona del inventario?')">
+                                    <button type="submit" class="btn-icon danger" title="Eliminar persona">🗑️</button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -126,4 +152,3 @@
 
 </body>
 </html>
-

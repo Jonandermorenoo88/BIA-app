@@ -1,6 +1,7 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
 
 @Entity
@@ -10,7 +11,10 @@ public class ActivoTecnologico {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El nombre del activo es obligatorio")
     private String nombre;
+
+    @NotBlank(message = "El tipo es obligatorio")
     private String tipo;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -59,7 +63,6 @@ public class ActivoTecnologico {
 
     @Override
     public int hashCode() {
-        // Constante para evitar que el hash cambie al persistir (id pasa de null a un valor)
         return getClass().hashCode();
     }
 }

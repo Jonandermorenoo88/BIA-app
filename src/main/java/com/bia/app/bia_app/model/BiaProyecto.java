@@ -1,6 +1,7 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,8 +12,13 @@ public class BiaProyecto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El nombre del BIA es obligatorio")
     private String nombre;
+
+    @NotBlank(message = "La descripción es obligatoria")
     private String descripcion;
+
+    @NotBlank(message = "El año es obligatorio")
     private String anio;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,6 +1,10 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,14 +15,29 @@ public class ProcesoCritico {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El nombre del proceso es obligatorio")
     private String nombre;
+
+    @NotBlank(message = "La descripción es obligatoria")
     private String descripcion;
-    
+
+    @NotNull(message = "El RTO es obligatorio")
+    @Min(value = 0, message = "El RTO no puede ser negativo")
     private Integer rtoHoras; // Recovery Time Objective en Horas
+
+    @NotBlank(message = "El RPO es obligatorio")
     private String rpo; // Recovery Point Objective
-    
+
+    @NotNull(message = "El impacto es obligatorio")
+    @Min(value = 1, message = "El impacto mínimo es 1")
+    @Max(value = 5, message = "El impacto máximo es 5")
     private Integer impacto; // 1 (Bajo) a 5 (Muy Alto)
+
+    @NotNull(message = "La probabilidad es obligatoria")
+    @Min(value = 1, message = "La probabilidad mínima es 1")
+    @Max(value = 5, message = "La probabilidad máxima es 5")
     private Integer probabilidad; // 1 (Rara) a 5 (Casi Cierta)
+
     private Integer criticidad; // Autocalculado (Impacto + Urgencia) 2 a 10
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -58,12 +77,9 @@ public class ProcesoCritico {
     }
 
     // ===== LÓGICA DE RIESGO CENTRALIZADA =====
-    // Única fuente de verdad para clasificar el riesgo de un proceso.
-    // Usada por: BiaDashboardController, informe_ejecutivo.html, ExcelExportService.
 
     /**
      * Riesgo total = Impacto x Probabilidad (escala 1-25).
-     * Se usa para el heatmap, el informe ejecutivo y el Excel.
      */
     public int getRiesgoTotal() {
         int imp = this.impacto != null ? this.impacto : 1;

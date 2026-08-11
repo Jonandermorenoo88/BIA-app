@@ -32,4 +32,17 @@ public class EmpresaService {
         return empresaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada con ID: " + id));
     }
+
+    public Empresa editar(Long id, Empresa datos) {
+        Empresa empresa = obtenerPorId(id);
+        empresa.setNombre(datos.getNombre());
+        empresa.setSector(datos.getSector());
+        empresa.setTamano(datos.getTamano());
+        return empresaRepository.save(empresa);
+    }
+
+    public void eliminar(Long id) {
+        Empresa empresa = obtenerPorId(id);
+        empresaRepository.delete(empresa);
+    }
 }
