@@ -1,6 +1,7 @@
 package com.bia.app.bia_app.controller;
 
 import com.bia.app.bia_app.model.ActivoTecnologico;
+import com.bia.app.bia_app.model.BiaProyecto;
 import com.bia.app.bia_app.model.Empresa;
 import com.bia.app.bia_app.model.Persona;
 import com.bia.app.bia_app.service.ActivosService;
@@ -23,19 +24,14 @@ public class EmpresaDetalleController {
 
     @GetMapping("/{empresaId}")
     public String verDetalleEmpresa(@PathVariable("empresaId") Long empresaId, Model model) {
-        // Asumiendo que EmpresaService tiene un método obtenerPorId. Voy a crearlo si
-        // no existe.
-        Empresa empresa = empresaService.listar().stream()
-                .filter(e -> e.getId().equals(empresaId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+        Empresa empresa = empresaService.obtenerPorId(empresaId);
 
         model.addAttribute("empresa", empresa);
         return "empresa_detalle";
     }
 
     @PostMapping("/{empresaId}/bias/guardar")
-    public String crearBia(@PathVariable("empresaId") Long empresaId, com.bia.app.bia_app.model.BiaProyecto bia) {
+    public String crearBia(@PathVariable("empresaId") Long empresaId, BiaProyecto bia) {
         bia.setId(null);
         activosService.crearBiaProyecto(empresaId, bia);
         return "redirect:/empresas/" + empresaId;

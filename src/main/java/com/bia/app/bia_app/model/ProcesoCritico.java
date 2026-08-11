@@ -1,6 +1,8 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class ProcesoCritico {
@@ -22,6 +24,22 @@ public class ProcesoCritico {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bia_proyecto_id")
     private BiaProyecto biaProyecto;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "proceso_activo",
+        joinColumns = @JoinColumn(name = "proceso_id"),
+        inverseJoinColumns = @JoinColumn(name = "activo_id")
+    )
+    private List<ActivoTecnologico> activos = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "proceso_persona",
+        joinColumns = @JoinColumn(name = "proceso_id"),
+        inverseJoinColumns = @JoinColumn(name = "persona_id")
+    )
+    private List<Persona> personas = new ArrayList<>();
 
     // Métodos lógicos
     public int calcularUrgencia() {
@@ -72,6 +90,7 @@ public class ProcesoCritico {
         return "ALTO".equals(getNivelRiesgo());
     }
 
+    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -144,35 +163,19 @@ public class ProcesoCritico {
         this.biaProyecto = biaProyecto;
     }
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "proceso_activo",
-        joinColumns = @JoinColumn(name = "proceso_id"),
-        inverseJoinColumns = @JoinColumn(name = "activo_id")
-    )
-    private java.util.List<ActivoTecnologico> activos = new java.util.ArrayList<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "proceso_persona",
-        joinColumns = @JoinColumn(name = "proceso_id"),
-        inverseJoinColumns = @JoinColumn(name = "persona_id")
-    )
-    private java.util.List<Persona> personas = new java.util.ArrayList<>();
-
-    public java.util.List<ActivoTecnologico> getActivos() {
+    public List<ActivoTecnologico> getActivos() {
         return activos;
     }
 
-    public void setActivos(java.util.List<ActivoTecnologico> activos) {
+    public void setActivos(List<ActivoTecnologico> activos) {
         this.activos = activos;
     }
 
-    public java.util.List<Persona> getPersonas() {
+    public List<Persona> getPersonas() {
         return personas;
     }
 
-    public void setPersonas(java.util.List<Persona> personas) {
+    public void setPersonas(List<Persona> personas) {
         this.personas = personas;
     }
 }

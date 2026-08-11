@@ -1,6 +1,8 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class BiaProyecto {
@@ -18,7 +20,7 @@ public class BiaProyecto {
     private Empresa empresa;
 
     @OneToMany(mappedBy = "biaProyecto", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<ProcesoCritico> procesos = new java.util.ArrayList<>();
+    private List<ProcesoCritico> procesos = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -60,11 +62,11 @@ public class BiaProyecto {
         this.empresa = empresa;
     }
 
-    public java.util.List<ProcesoCritico> getProcesos() {
+    public List<ProcesoCritico> getProcesos() {
         return procesos;
     }
 
-    public void setProcesos(java.util.List<ProcesoCritico> procesos) {
+    public void setProcesos(List<ProcesoCritico> procesos) {
         this.procesos = procesos;
     }
 }

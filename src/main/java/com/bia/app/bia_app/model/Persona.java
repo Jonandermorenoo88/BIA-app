@@ -1,6 +1,7 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import java.util.Objects;
 
 @Entity
 public class Persona {
@@ -55,5 +56,19 @@ public class Persona {
 
     public void setEmpresa(Empresa empresa) {
         this.empresa = empresa;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Persona persona = (Persona) o;
+        return id != null && id.equals(persona.id);
+    }
+
+    @Override
+    public int hashCode() {
+        // Constante para evitar que el hash cambie al persistir (id pasa de null a un valor)
+        return getClass().hashCode();
     }
 }

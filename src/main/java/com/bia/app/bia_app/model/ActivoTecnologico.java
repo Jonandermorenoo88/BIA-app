@@ -1,6 +1,7 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import java.util.Objects;
 
 @Entity
 public class ActivoTecnologico {
@@ -46,5 +47,19 @@ public class ActivoTecnologico {
 
     public void setEmpresa(Empresa empresa) {
         this.empresa = empresa;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ActivoTecnologico that = (ActivoTecnologico) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        // Constante para evitar que el hash cambie al persistir (id pasa de null a un valor)
+        return getClass().hashCode();
     }
 }

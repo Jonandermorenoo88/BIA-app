@@ -1,19 +1,20 @@
 package com.bia.app.bia_app.service;
 
 import com.bia.app.bia_app.model.ActivoTecnologico;
+import com.bia.app.bia_app.model.BiaProyecto;
 import com.bia.app.bia_app.model.Empresa;
 import com.bia.app.bia_app.model.Persona;
 import com.bia.app.bia_app.model.ProcesoCritico;
 import com.bia.app.bia_app.repository.ActivoTecnologicoRepository;
+import com.bia.app.bia_app.repository.BiaProyectoRepository;
 import com.bia.app.bia_app.repository.EmpresaRepository;
 import com.bia.app.bia_app.repository.PersonaRepository;
 import com.bia.app.bia_app.repository.ProcesoCriticoRepository;
 import org.springframework.stereotype.Service;
-
-import com.bia.app.bia_app.model.BiaProyecto;
-import com.bia.app.bia_app.repository.BiaProyectoRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class ActivosService {
 
     private final EmpresaRepository empresaRepository;

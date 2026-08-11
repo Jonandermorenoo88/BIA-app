@@ -28,8 +28,8 @@
                         <input type="text" id="sector" name="sector" placeholder="ej. Tecnología" required />
                     </div>
                     <div class="input-group">
-                        <label for="tamaño">Tamaño (Empleados)</label>
-                        <input type="text" id="tamaño" name="tamaño" placeholder="ej. 5000+" required />
+                        <label for="tamano">Tamaño (Empleados)</label>
+                        <input type="text" id="tamano" name="tamano" placeholder="ej. 5000+" required />
                     </div>
                 </div>
                 <button type="submit" class="btn-submit">Añadir Empresa</button>
@@ -64,7 +64,7 @@
                                 </svg>
                             </span>
                             Tamaño: <strong style="color:white; margin-left: 4px;"
-                                th:text="${empresa.tamaño}">Tamaño</strong>
+                                th:text="${empresa.tamano}">Tamaño</strong>
                         </div>
                     </div>
                     <a th:href="@{/empresas/{id}(id=${empresa.id})}" class="btn-submit"

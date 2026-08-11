@@ -1,6 +1,8 @@
 package com.bia.app.bia_app.model;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class Empresa {
@@ -11,7 +13,18 @@ public class Empresa {
 
     private String nombre;
     private String sector;
-    private String tamaño;
+
+    @Column(name = "tamano")
+    private String tamano;
+
+    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Persona> personas = new ArrayList<>();
+
+    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BiaProyecto> bias = new ArrayList<>();
+
+    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ActivoTecnologico> activos = new ArrayList<>();
 
     // getters y setters
     public Long getId() {
@@ -38,44 +51,35 @@ public class Empresa {
         this.sector = sector;
     }
 
-    public String getTamaño() {
-        return tamaño;
+    public String getTamano() {
+        return tamano;
     }
 
-    public void setTamaño(String tamaño) {
-        this.tamaño = tamaño;
+    public void setTamano(String tamano) {
+        this.tamano = tamano;
     }
 
-    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<Persona> personas = new java.util.ArrayList<>();
-
-    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<BiaProyecto> bias = new java.util.ArrayList<>();
-
-    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<ActivoTecnologico> activos = new java.util.ArrayList<>();
-
-    public java.util.List<BiaProyecto> getBias() {
+    public List<BiaProyecto> getBias() {
         return bias;
     }
 
-    public void setBias(java.util.List<BiaProyecto> bias) {
+    public void setBias(List<BiaProyecto> bias) {
         this.bias = bias;
     }
 
-    public java.util.List<Persona> getPersonas() {
+    public List<Persona> getPersonas() {
         return personas;
     }
 
-    public void setPersonas(java.util.List<Persona> personas) {
+    public void setPersonas(List<Persona> personas) {
         this.personas = personas;
     }
 
-    public java.util.List<ActivoTecnologico> getActivos() {
+    public List<ActivoTecnologico> getActivos() {
         return activos;
     }
 
-    public void setActivos(java.util.List<ActivoTecnologico> activos) {
+    public void setActivos(List<ActivoTecnologico> activos) {
         this.activos = activos;
     }
 }

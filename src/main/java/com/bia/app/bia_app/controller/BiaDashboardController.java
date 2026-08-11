@@ -15,6 +15,8 @@ import com.bia.app.bia_app.model.ProcesoCritico;
 import com.bia.app.bia_app.repository.BiaProyectoRepository;
 import com.bia.app.bia_app.repository.EmpresaRepository;
 import com.bia.app.bia_app.service.ActivosService;
+import com.bia.app.bia_app.service.BiaAnalysisService;
+import com.bia.app.bia_app.service.BiaAnalysisService.BiaResumen;
 import com.bia.app.bia_app.service.ExcelExportService;
 
 import java.io.ByteArrayInputStream;
@@ -28,24 +30,31 @@ public class BiaDashboardController {
     private final EmpresaRepository empresaRepository;
     private final ActivosService activosService;
     private final ExcelExportService excelExportService;
+    private final BiaAnalysisService biaAnalysisService;
 
-    public BiaDashboardController(BiaProyectoRepository biaRepository, EmpresaRepository empresaRepository, ActivosService activosService, ExcelExportService excelExportService) {
+    public BiaDashboardController(BiaProyectoRepository biaRepository, EmpresaRepository empresaRepository,
+                                  ActivosService activosService, ExcelExportService excelExportService,
+                                  BiaAnalysisService biaAnalysisService) {
         this.biaRepository = biaRepository;
         this.empresaRepository = empresaRepository;
         this.activosService = activosService;
         this.excelExportService = excelExportService;
+        this.biaAnalysisService = biaAnalysisService;
     }
 
     @GetMapping("/{biaId}/exportar-excel")
-    public ResponseEntity<InputStreamResource> exportarExcel(@PathVariable("biaId") Long biaId) throws IOException {
+    public ResponseEntity<InputStreamResource> exportarExcel(
+            @PathVariable("empresaId") Long empresaId,
+            @PathVariable("biaId") Long biaId) throws IOException {
+
         BiaProyecto bia = biaRepository.findById(biaId)
                 .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
-                
+
         ByteArrayInputStream in = excelExportService.exportBiaToExcel(bia);
-        
+
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=Matriz_BIA_" + bia.getNombre().replace(" ", "_").replaceAll("[^a-zA-Z0-9_]", "") + ".xlsx");
-        
+
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
@@ -56,10 +65,10 @@ public class BiaDashboardController {
     public String verDashboardBia(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId, Model model) {
         Empresa empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
-        
+
         BiaProyecto bia = biaRepository.findById(biaId)
                 .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
-                
+
         model.addAttribute("empresa", empresa);
         model.addAttribute("bia", bia);
         return "bia_dashboard";
@@ -69,52 +78,21 @@ public class BiaDashboardController {
     public String generarInformeEjecutivo(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId, Model model) {
         Empresa empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
-        
+
         BiaProyecto bia = biaRepository.findById(biaId)
                 .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
-                
-        int totalProcesos = bia.getProcesos().size();
 
-        // Clasificación de riesgo centralizada en ProcesoCritico (getNivelRiesgo/isCritico/isAlto)
-        long procesosCriticos = bia.getProcesos().stream()
-                .filter(ProcesoCritico::isCritico)
-                .count();
-        long procesosAltos = bia.getProcesos().stream()
-                .filter(ProcesoCritico::isAlto)
-                .count();
-                
-        // Empleados SPOF (Asignados a multiples procesos en este BIA)
-        java.util.List<com.bia.app.bia_app.model.Persona> spofPersonas = new java.util.ArrayList<>();
-        java.util.Map<com.bia.app.bia_app.model.Persona, Integer> conteoPersonas = new java.util.HashMap<>();
-        for (ProcesoCritico p : bia.getProcesos()) {
-            for (com.bia.app.bia_app.model.Persona per : p.getPersonas()) {
-                conteoPersonas.put(per, conteoPersonas.getOrDefault(per, 0) + 1);
-            }
-        }
-        for (java.util.Map.Entry<com.bia.app.bia_app.model.Persona, Integer> entry : conteoPersonas.entrySet()) {
-            if (entry.getValue() > 1) spofPersonas.add(entry.getKey());
-        }
-        
-        // Activos SPOF
-        java.util.List<com.bia.app.bia_app.model.ActivoTecnologico> spofActivos = new java.util.ArrayList<>();
-        java.util.Map<com.bia.app.bia_app.model.ActivoTecnologico, Integer> conteoActivos = new java.util.HashMap<>();
-        for (ProcesoCritico p : bia.getProcesos()) {
-            for (com.bia.app.bia_app.model.ActivoTecnologico act : p.getActivos()) {
-                conteoActivos.put(act, conteoActivos.getOrDefault(act, 0) + 1);
-            }
-        }
-        for (java.util.Map.Entry<com.bia.app.bia_app.model.ActivoTecnologico, Integer> entry : conteoActivos.entrySet()) {
-            if (entry.getValue() > 1) spofActivos.add(entry.getKey());
-        }
+        // Lógica de análisis delegada al servicio
+        BiaResumen resumen = biaAnalysisService.calcularResumen(bia);
 
         model.addAttribute("empresa", empresa);
         model.addAttribute("bia", bia);
-        model.addAttribute("totalProcesos", totalProcesos);
-        model.addAttribute("procesosCriticos", procesosCriticos);
-        model.addAttribute("procesosAltos", procesosAltos);
-        model.addAttribute("spofPersonas", spofPersonas);
-        model.addAttribute("spofActivos", spofActivos);
-        
+        model.addAttribute("totalProcesos", resumen.totalProcesos());
+        model.addAttribute("procesosCriticos", resumen.procesosCriticos());
+        model.addAttribute("procesosAltos", resumen.procesosAltos());
+        model.addAttribute("spofPersonas", resumen.spofPersonas());
+        model.addAttribute("spofActivos", resumen.spofActivos());
+
         return "informe_ejecutivo";
     }
 

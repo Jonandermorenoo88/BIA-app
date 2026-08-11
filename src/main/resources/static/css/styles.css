@@ -261,3 +261,53 @@ body {
 .company-card:nth-child(3) { animation-delay: 0.3s; }
 .company-card:nth-child(4) { animation-delay: 0.4s; }
 .company-card:nth-child(5) { animation-delay: 0.5s; }
+
+/* ===== Shared Component Styles ===== */
+.input-modern {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 8px !important;
+    font-family: inherit !important;
+    font-size: 1rem !important;
+    transition: all 0.3s ease !important;
+    width: 100%;
+    margin-bottom: 0.5rem;
+    box-sizing: border-box;
+}
+
+.input-modern:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+    outline: none;
+}
+
+.chip-metric {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #d1d5db;
+}
+
+.chip-dependency {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.chip-tech {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.chip-person {
+    background: rgba(244, 63, 94, 0.15);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+}

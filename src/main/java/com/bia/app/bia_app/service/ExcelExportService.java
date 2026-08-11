@@ -20,7 +20,13 @@ public class ExcelExportService {
     public ByteArrayInputStream exportBiaToExcel(BiaProyecto bia) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             
-            Sheet sheet = workbook.createSheet("BIA - " + bia.getNombre().replaceAll("[^a-zA-Z0-9 ]", ""));
+            String nombreHoja = "BIA - " + bia.getNombre().replaceAll("[^a-zA-Z0-9 ]", "");
+            // Excel no permite nombres de hoja de mas de 31 caracteres; si se supera,
+            // createSheet() lanza IllegalArgumentException y la exportacion falla.
+            if (nombreHoja.length() > 31) {
+                nombreHoja = nombreHoja.substring(0, 31);
+            }
+            Sheet sheet = workbook.createSheet(nombreHoja);
             
             // Header fonts & styles
             Font headerFont = workbook.createFont();
