@@ -409,3 +409,121 @@ body {
     border-color: rgba(239, 68, 68, 0.4);
     color: #f87171;
 }
+
+/* ===== Barra de usuario / seguridad ===== */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+
+.topbar-links, .topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.topbar a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.topbar a:hover {
+    color: var(--primary-color);
+}
+
+.topbar-brand {
+    font-weight: 700;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.role-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #93c5fd;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font: inherit;
+}
+
+.btn-link:hover {
+    color: #fb7185;
+}
+
+.readonly-notice {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.auth-card {
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+.auth-card .input-group {
+    margin-bottom: 1rem;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.users-table th, .users-table td {
+    text-align: left;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.users-table th {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.empresa-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    max-height: 140px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+}
+
+.temp-password {
+    font-family: monospace;
+    font-size: 1.1rem;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    user-select: all;
+}

@@ -13,6 +13,13 @@ import com.bia.app.bia_app.repository.ProcesoCriticoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Operaciones sobre BIA, procesos, personas y activos.
+ * Todas reciben el id de empresa (y de BIA cuando aplica) y verifican que cada
+ * recurso pertenece a esa empresa, para que no se pueda leer ni modificar datos
+ * de otro cliente cambiando un id en la URL (IDOR).
+ * El permiso del usuario sobre la empresa lo comprueba antes AccesoService.
+ */
 @Service
 @Transactional
 public class ActivosService {
@@ -35,19 +42,45 @@ public class ActivosService {
         this.biaRepository = biaRepository;
     }
 
+    // ===== CONSULTA CON VERIFICACIÓN DE PERTENENCIA =====
+
+    @Transactional(readOnly = true)
+    public BiaProyecto obtenerBia(Long idEmpresa, Long idBia) {
+        return biaRepository.findByIdAndEmpresa_Id(idBia, idEmpresa)
+                .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
+    }
+
+    private ProcesoCritico obtenerProceso(Long idEmpresa, Long idBia, Long idProceso) {
+        return procesoRepository.findByIdAndBiaProyecto_IdAndBiaProyecto_Empresa_Id(idProceso, idBia, idEmpresa)
+                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
+    }
+
+    private ActivoTecnologico obtenerActivo(Long idEmpresa, Long idActivo) {
+        return activoRepository.findByIdAndEmpresa_Id(idActivo, idEmpresa)
+                .orElseThrow(() -> new IllegalArgumentException("Activo no encontrado"));
+    }
+
+    private Persona obtenerPersona(Long idEmpresa, Long idPersona) {
+        return personaRepository.findByIdAndEmpresa_Id(idPersona, idEmpresa)
+                .orElseThrow(() -> new IllegalArgumentException("Persona no encontrada"));
+    }
+
+    private Empresa obtenerEmpresa(Long idEmpresa) {
+        return empresaRepository.findById(idEmpresa)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+    }
+
     // ===== PROCESOS =====
 
-    public void guardarProcesoCritico(Long idBia, ProcesoCritico proceso) {
-        BiaProyecto bia = biaRepository.findById(idBia)
-                .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
+    public void guardarProcesoCritico(Long idEmpresa, Long idBia, ProcesoCritico proceso) {
+        BiaProyecto bia = obtenerBia(idEmpresa, idBia);
         proceso.setBiaProyecto(bia);
         proceso.calcularYSetearCriticidad();
         procesoRepository.save(proceso);
     }
 
-    public void editarProceso(Long idProceso, ProcesoCritico datos) {
-        ProcesoCritico proceso = procesoRepository.findById(idProceso)
-                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
+    public void editarProceso(Long idEmpresa, Long idBia, Long idProceso, ProcesoCritico datos) {
+        ProcesoCritico proceso = obtenerProceso(idEmpresa, idBia, idProceso);
         proceso.setNombre(datos.getNombre());
         proceso.setDescripcion(datos.getDescripcion());
         proceso.setRtoHoras(datos.getRtoHoras());
@@ -58,89 +91,87 @@ public class ActivosService {
         procesoRepository.save(proceso);
     }
 
-    public void eliminarProceso(Long idProceso) {
-        ProcesoCritico proceso = procesoRepository.findById(idProceso)
-                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
+    public void eliminarProceso(Long idEmpresa, Long idBia, Long idProceso) {
+        ProcesoCritico proceso = obtenerProceso(idEmpresa, idBia, idProceso);
+        proceso.getBiaProyecto().getProcesos().remove(proceso);
         procesoRepository.delete(proceso);
     }
 
     // ===== BIA PROYECTOS =====
 
     public void crearBiaProyecto(Long idEmpresa, BiaProyecto bia) {
-        Empresa empresa = empresaRepository.findById(idEmpresa)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
-        bia.setEmpresa(empresa);
+        bia.setEmpresa(obtenerEmpresa(idEmpresa));
         biaRepository.save(bia);
     }
 
-    public void eliminarBiaProyecto(Long idBia) {
-        BiaProyecto bia = biaRepository.findById(idBia)
-                .orElseThrow(() -> new IllegalArgumentException("BIA no encontrado"));
+    public void eliminarBiaProyecto(Long idEmpresa, Long idBia) {
+        BiaProyecto bia = obtenerBia(idEmpresa, idBia);
+        bia.getEmpresa().getBias().remove(bia);
         biaRepository.delete(bia);
     }
 
     // ===== PERSONAS =====
 
     public void guardarPersona(Long idEmpresa, Persona persona) {
-        Empresa empresa = empresaRepository.findById(idEmpresa)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
-        persona.setEmpresa(empresa);
+        persona.setEmpresa(obtenerEmpresa(idEmpresa));
         personaRepository.save(persona);
     }
 
-    public void eliminarPersona(Long idPersona) {
-        personaRepository.deleteById(idPersona);
+    public void eliminarPersona(Long idEmpresa, Long idPersona) {
+        Persona persona = obtenerPersona(idEmpresa, idPersona);
+        // Quitar primero las vinculaciones con procesos (tabla proceso_persona)
+        for (ProcesoCritico p : procesoRepository.findByPersonas_Id(idPersona)) {
+            p.getPersonas().remove(persona);
+        }
+        persona.getEmpresa().getPersonas().remove(persona);
+        personaRepository.delete(persona);
     }
 
     // ===== ACTIVOS =====
 
     public void guardarActivoTecnologico(Long idEmpresa, ActivoTecnologico activo) {
-        Empresa empresa = empresaRepository.findById(idEmpresa)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
-        activo.setEmpresa(empresa);
+        activo.setEmpresa(obtenerEmpresa(idEmpresa));
         activoRepository.save(activo);
     }
 
-    public void eliminarActivo(Long idActivo) {
-        activoRepository.deleteById(idActivo);
+    public void eliminarActivo(Long idEmpresa, Long idActivo) {
+        ActivoTecnologico activo = obtenerActivo(idEmpresa, idActivo);
+        // Quitar primero las vinculaciones con procesos (tabla proceso_activo)
+        for (ProcesoCritico p : procesoRepository.findByActivos_Id(idActivo)) {
+            p.getActivos().remove(activo);
+        }
+        activo.getEmpresa().getActivos().remove(activo);
+        activoRepository.delete(activo);
     }
 
     // ===== VINCULACIÓN / DESVINCULACIÓN =====
 
-    public void vincularActivoAProceso(Long idProceso, Long idActivo) {
-        ProcesoCritico proceso = procesoRepository.findById(idProceso)
-                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
-        ActivoTecnologico activo = activoRepository.findById(idActivo)
-                .orElseThrow(() -> new IllegalArgumentException("Activo no encontrado"));
-
+    public void vincularActivoAProceso(Long idEmpresa, Long idBia, Long idProceso, Long idActivo) {
+        ProcesoCritico proceso = obtenerProceso(idEmpresa, idBia, idProceso);
+        ActivoTecnologico activo = obtenerActivo(idEmpresa, idActivo);
         if (!proceso.getActivos().contains(activo)) {
             proceso.getActivos().add(activo);
             procesoRepository.save(proceso);
         }
     }
 
-    public void desvincularActivoDeProceso(Long idProceso, Long idActivo) {
-        ProcesoCritico proceso = procesoRepository.findById(idProceso)
-                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
+    public void desvincularActivoDeProceso(Long idEmpresa, Long idBia, Long idProceso, Long idActivo) {
+        ProcesoCritico proceso = obtenerProceso(idEmpresa, idBia, idProceso);
         proceso.getActivos().removeIf(a -> a.getId().equals(idActivo));
         procesoRepository.save(proceso);
     }
 
-    public void vincularPersonaAProceso(Long idProceso, Long idPersona) {
-        ProcesoCritico proceso = procesoRepository.findById(idProceso)
-                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
-        Persona persona = personaRepository.findById(idPersona)
-                .orElseThrow(() -> new IllegalArgumentException("Persona no encontrada"));
-
+    public void vincularPersonaAProceso(Long idEmpresa, Long idBia, Long idProceso, Long idPersona) {
+        ProcesoCritico proceso = obtenerProceso(idEmpresa, idBia, idProceso);
+        Persona persona = obtenerPersona(idEmpresa, idPersona);
         if (!proceso.getPersonas().contains(persona)) {
             proceso.getPersonas().add(persona);
             procesoRepository.save(proceso);
         }
     }
 
-    public void desvincularPersonaDeProceso(Long idProceso, Long idPersona) {
-        ProcesoCritico proceso = procesoRepository.findById(idProceso)
-                .orElseThrow(() -> new IllegalArgumentException("Proceso no encontrado"));
+    public void desvincularPersonaDeProceso(Long idEmpresa, Long idBia, Long idProceso, Long idPersona) {
+        ProcesoCritico proceso = obtenerProceso(idEmpresa, idBia, idProceso);
         proceso.getPersonas().removeIf(p -> p.getId().equals(idPersona));
         procesoRepository.save(proceso);
     }

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <title>Iniciar sesión - BIA App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>BIA App</h1>
+            <p>Business Impact Analysis · Acceso restringido</p>
+        </header>
+
+        <section class="glass-card auth-card">
+            <h2 class="section-title">Iniciar sesión</h2>
+
+            <div th:if="${param.error}" class="flash-message flash-error">
+                ❌ Usuario o contraseña incorrectos, o cuenta bloqueada temporalmente.
+            </div>
+            <div th:if="${param.logout}" class="flash-message flash-success">
+                ✅ Has cerrado sesión correctamente.
+            </div>
+
+            <form th:action="@{/login}" method="post" autocomplete="on">
+                <div class="input-group">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" name="username" required autofocus autocomplete="username" />
+                </div>
+                <div class="input-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password" />
+                </div>
+                <button type="submit" class="btn-submit">Entrar</button>
+            </form>
+            <p style="margin-top: 1.25rem; font-size: 0.8rem; color: var(--text-secondary); text-align: center;">
+                Tras 5 intentos fallidos la cuenta se bloquea 15 minutos.
+            </p>
+        </section>
+    </div>
+</body>
+</html>

@@ -12,6 +12,7 @@
 
 <body>
     <div class="container" style="max-width: 1300px;">
+        <div th:replace="~{fragments/nav :: nav}"></div>
         <header class="header" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <a th:href="@{/empresas/{id}(id=${empresa.id})}"
@@ -42,6 +43,7 @@
             </div>
         </header>
 
+        <div th:unless="${puedeEditar}" class="readonly-notice">👁️ Acceso de solo lectura: puedes consultar el BIA, el informe ejecutivo y exportar a Excel.</div>
         <!-- FLASH MESSAGES -->
         <div th:if="${flashSuccess}" class="flash-message flash-success">
             ✅ <span th:text="${flashSuccess}"></span>
@@ -111,7 +113,7 @@
                     Procesos Críticos en este BIA
                 </h2>
 
-                <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/guardar(id=${empresa.id}, biaId=${bia.id})}"
+                <form th:if="${puedeEditar}" th:action="@{/empresas/{id}/bias/{biaId}/procesos/guardar(id=${empresa.id}, biaId=${bia.id})}"
                     method="post"
                     style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
                     <div class="form-grid" style="grid-template-columns: 1fr;">
@@ -154,9 +156,9 @@
                                 <span
                                     style="background: var(--primary-color); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; font-weight: bold;"
                                     th:text="'Criticidad ' + ${proceso.criticidad != null ? proceso.criticidad : 'N/A'}"></span>
-                                <button class="btn-icon" type="button"
+                                <button th:if="${puedeEditar}" class="btn-icon" type="button"
                                         th:onclick="'toggleEdit(' + ${proceso.id} + ')'" title="Editar">✏️</button>
-                                <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/eliminar(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
+                                <form th:if="${puedeEditar}" th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/eliminar(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
                                       method="post" style="margin: 0;"
                                       onsubmit="return confirm('¿Eliminar este proceso y todas sus dependencias vinculadas?')">
                                     <button type="submit" class="btn-icon danger" title="Eliminar">🗑️</button>
@@ -173,7 +175,7 @@
                         </div>
 
                         <!-- EDIT FORM (hidden by default) -->
-                        <div th:id="'edit-' + ${proceso.id}" style="display: none; margin: 0.75rem 0; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                        <div th:if="${puedeEditar}" th:id="'edit-' + ${proceso.id}" style="display: none; margin: 0.75rem 0; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
                             <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/editar(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}" method="post">
                                 <div class="form-grid" style="grid-template-columns: 1fr;">
                                     <input type="text" name="nombre" th:value="${proceso.nombre}" required class="input-modern" />
@@ -214,7 +216,7 @@
                             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
                                 <span th:each="activoL : ${proceso.activos}" class="chip-dependency chip-tech" style="display: inline-flex; align-items: center; gap: 4px;">
                                     💻 <span th:text="${activoL.nombre}"></span>
-                                    <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/desvincular-activo(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
+                                    <form th:if="${puedeEditar}" th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/desvincular-activo(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
                                           method="post" style="margin: 0; display: inline;"
                                           onsubmit="return confirm('¿Desvincular este activo del proceso?')">
                                         <input type="hidden" name="idActivo" th:value="${activoL.id}" />
@@ -224,7 +226,7 @@
                                 <!-- Personas Linked -->
                                 <span th:each="personaL : ${proceso.personas}" class="chip-dependency chip-person" style="display: inline-flex; align-items: center; gap: 4px;">
                                     👤 <span th:text="${personaL.nombre}"></span>
-                                    <form th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/desvincular-persona(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
+                                    <form th:if="${puedeEditar}" th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/desvincular-persona(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"
                                           method="post" style="margin: 0; display: inline;"
                                           onsubmit="return confirm('¿Desvincular esta persona del proceso?')">
                                         <input type="hidden" name="idPersona" th:value="${personaL.id}" />
@@ -240,7 +242,7 @@
 
                         <!-- LINKING FORMS -->
                         <div style="display: flex; gap: 0.5rem;"
-                            th:if="${empresa.activos.size() > 0 or empresa.personas.size() > 0}">
+                            th:if="${puedeEditar and (empresa.activos.size() > 0 or empresa.personas.size() > 0)}">
                             <!-- Link Activo -->
                             <form th:if="${empresa.activos.size() > 0}"
                                 th:action="@{/empresas/{id}/bias/{biaId}/procesos/{idProceso}/vincular-activo(id=${empresa.id}, biaId=${bia.id}, idProceso=${proceso.id})}"

@@ -12,12 +12,14 @@
 
 <body>
     <div class="container" style="max-width: 1300px;">
+        <div th:replace="~{fragments/nav :: nav}"></div>
         <header class="header">
             <a href="/empresas" style="color: var(--primary-color); text-decoration: none; font-size: 0.9rem; float: left; margin-top: 1rem;">&larr; Volver al Hub</a>
             <h1 th:text="'Centro de Control: ' + ${empresa.nombre}">Nombre de Empresa</h1>
             <p>Directorio Global de Inventario y Proyectos BIA</p>
         </header>
 
+        <div th:unless="${puedeEditar}" class="readonly-notice">👁️ Acceso de solo lectura: puedes consultar el BIA, el informe ejecutivo y exportar a Excel.</div>
         <!-- FLASH MESSAGES -->
         <div th:if="${flashSuccess}" class="flash-message flash-success">
             ✅ <span th:text="${flashSuccess}"></span>
@@ -36,7 +38,7 @@
                     Proyectos BIA (Business Impact Analysis)
                 </h2>
                 
-                <form th:action="@{/empresas/{id}/bias/guardar(id=${empresa.id})}" method="post" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                <form th:if="${puedeEditar}" th:action="@{/empresas/{id}/bias/guardar(id=${empresa.id})}" method="post" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
                     <div class="form-grid" style="grid-template-columns: 1fr;">
                         <input type="text" name="nombre" placeholder="Nombre completo del BIA (ej. BIA Corporativo 2026)" required class="input-modern"/>
                     </div>
@@ -53,7 +55,7 @@
                             <strong th:text="${bia.nombre}" style="display: block; color: white; font-size: 1.1rem;"></strong>
                             <div class="action-buttons">
                                 <span class="chip-tech" th:text="${bia.anio}"></span>
-                                <form th:action="@{/empresas/{empresaId}/bias/{biaId}/eliminar(empresaId=${empresa.id}, biaId=${bia.id})}" method="post" style="margin: 0;"
+                                <form th:if="${puedeEditar}" th:action="@{/empresas/{empresaId}/bias/{biaId}/eliminar(empresaId=${empresa.id}, biaId=${bia.id})}" method="post" style="margin: 0;"
                                       onsubmit="return confirm('¿Eliminar este proyecto BIA y TODOS sus procesos? Esta acción no se puede deshacer.')">
                                     <button type="submit" class="btn-icon danger" title="Eliminar BIA">🗑️</button>
                                 </form>
@@ -68,7 +70,7 @@
                     </div>
                 </div>
                 <div th:if="${empresa.bias == null or empresa.bias.isEmpty()}" style="text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.9rem;">
-                    No hay proyectos BIA creados todavía. Usa el formulario superior para comenzar tu primera evaluación.
+                    No hay proyectos BIA creados todavía. <span th:if="${puedeEditar}">Usa el formulario superior para comenzar tu primera evaluación.</span>
                 </div>
             </section>
 
@@ -82,7 +84,7 @@
                         Inventario de Ciberactivos
                     </h2>
                     
-                    <form th:action="@{/empresas/{id}/activos/guardar(id=${empresa.id})}" method="post" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                    <form th:if="${puedeEditar}" th:action="@{/empresas/{id}/activos/guardar(id=${empresa.id})}" method="post" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
                         <div class="form-grid" style="grid-template-columns: 1fr;">
                             <input type="text" name="nombre" placeholder="Nombre (ej. ERP Central)" required class="input-modern"/>
                             <select name="tipo" required class="input-modern" style="background: rgba(0,0,0,0.2) !important;">
@@ -101,7 +103,7 @@
                                 <strong th:text="${activo.nombre}" style="display: block; color: white;"></strong>
                                 <span th:text="${activo.tipo}" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
                             </div>
-                            <form th:action="@{/empresas/{empresaId}/activos/{activoId}/eliminar(empresaId=${empresa.id}, activoId=${activo.id})}" method="post" style="margin: 0;"
+                            <form th:if="${puedeEditar}" th:action="@{/empresas/{empresaId}/activos/{activoId}/eliminar(empresaId=${empresa.id}, activoId=${activo.id})}" method="post" style="margin: 0;"
                                   onsubmit="return confirm('¿Eliminar este activo tecnológico?')">
                                 <button type="submit" class="btn-icon danger" title="Eliminar activo">🗑️</button>
                             </form>
@@ -116,7 +118,7 @@
                         Personal Clave
                     </h2>
                     
-                    <form th:action="@{/empresas/{id}/personas/guardar(id=${empresa.id})}" method="post" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                    <form th:if="${puedeEditar}" th:action="@{/empresas/{id}/personas/guardar(id=${empresa.id})}" method="post" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
                         <div class="form-grid" style="grid-template-columns: 1fr;">
                             <input type="text" name="nombre" placeholder="Nombre completo" required class="input-modern"/>
                             <div style="display: flex; gap: 0.5rem;">
@@ -137,7 +139,7 @@
                                 <div style="font-size: 0.85rem; color: var(--text-secondary);">
                                     📞 <span th:text="${persona.telefono}"></span>
                                 </div>
-                                <form th:action="@{/empresas/{empresaId}/personas/{personaId}/eliminar(empresaId=${empresa.id}, personaId=${persona.id})}" method="post" style="margin: 0;"
+                                <form th:if="${puedeEditar}" th:action="@{/empresas/{empresaId}/personas/{personaId}/eliminar(empresaId=${empresa.id}, personaId=${persona.id})}" method="post" style="margin: 0;"
                                       onsubmit="return confirm('¿Eliminar esta persona del inventario?')">
                                     <button type="submit" class="btn-icon danger" title="Eliminar persona">🗑️</button>
                                 </form>
