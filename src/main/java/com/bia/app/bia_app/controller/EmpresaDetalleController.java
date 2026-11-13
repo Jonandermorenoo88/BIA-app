@@ -6,6 +6,7 @@ import com.bia.app.bia_app.model.Empresa;
 import com.bia.app.bia_app.model.Persona;
 import com.bia.app.bia_app.service.ActivosService;
 import com.bia.app.bia_app.service.EmpresaService;
+import com.bia.app.bia_app.security.AccesoService;
 
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -20,14 +21,18 @@ public class EmpresaDetalleController {
 
     private final EmpresaService empresaService;
     private final ActivosService activosService;
+    private final AccesoService accesoService;
 
-    public EmpresaDetalleController(EmpresaService empresaService, ActivosService activosService) {
+    public EmpresaDetalleController(EmpresaService empresaService, ActivosService activosService,
+                                    AccesoService accesoService) {
         this.empresaService = empresaService;
         this.activosService = activosService;
+        this.accesoService = accesoService;
     }
 
     @GetMapping("/{empresaId}")
     public String verDetalleEmpresa(@PathVariable("empresaId") Long empresaId, Model model) {
+        accesoService.comprobarLectura(empresaId);
         Empresa empresa = empresaService.obtenerPorId(empresaId);
         model.addAttribute("empresa", empresa);
         return "empresa_detalle";
@@ -36,6 +41,7 @@ public class EmpresaDetalleController {
     @PostMapping("/{empresaId}/bias/guardar")
     public String crearBia(@PathVariable("empresaId") Long empresaId, @Valid BiaProyecto bia,
                            BindingResult result, RedirectAttributes flash) {
+        accesoService.comprobarEscritura(empresaId);
         if (result.hasErrors()) {
             flash.addFlashAttribute("flashError", "Error: " + result.getFieldError().getDefaultMessage());
             return "redirect:/empresas/" + empresaId;
@@ -49,7 +55,8 @@ public class EmpresaDetalleController {
     @PostMapping("/{empresaId}/bias/{biaId}/eliminar")
     public String eliminarBia(@PathVariable("empresaId") Long empresaId, @PathVariable("biaId") Long biaId,
                               RedirectAttributes flash) {
-        activosService.eliminarBiaProyecto(biaId);
+        accesoService.comprobarEscritura(empresaId);
+        activosService.eliminarBiaProyecto(empresaId, biaId);
         flash.addFlashAttribute("flashSuccess", "Proyecto BIA eliminado correctamente");
         return "redirect:/empresas/" + empresaId;
     }
@@ -57,6 +64,7 @@ public class EmpresaDetalleController {
     @PostMapping("/{empresaId}/personas/guardar")
     public String guardarPersona(@PathVariable("empresaId") Long empresaId, @Valid Persona persona,
                                  BindingResult result, RedirectAttributes flash) {
+        accesoService.comprobarEscritura(empresaId);
         if (result.hasErrors()) {
             flash.addFlashAttribute("flashError", "Error: " + result.getFieldError().getDefaultMessage());
             return "redirect:/empresas/" + empresaId;
@@ -70,7 +78,8 @@ public class EmpresaDetalleController {
     @PostMapping("/{empresaId}/personas/{personaId}/eliminar")
     public String eliminarPersona(@PathVariable("empresaId") Long empresaId, @PathVariable("personaId") Long personaId,
                                   RedirectAttributes flash) {
-        activosService.eliminarPersona(personaId);
+        accesoService.comprobarEscritura(empresaId);
+        activosService.eliminarPersona(empresaId, personaId);
         flash.addFlashAttribute("flashSuccess", "Persona eliminada correctamente");
         return "redirect:/empresas/" + empresaId;
     }
@@ -78,6 +87,7 @@ public class EmpresaDetalleController {
     @PostMapping("/{empresaId}/activos/guardar")
     public String guardarActivo(@PathVariable("empresaId") Long empresaId, @Valid ActivoTecnologico activo,
                                 BindingResult result, RedirectAttributes flash) {
+        accesoService.comprobarEscritura(empresaId);
         if (result.hasErrors()) {
             flash.addFlashAttribute("flashError", "Error: " + result.getFieldError().getDefaultMessage());
             return "redirect:/empresas/" + empresaId;
@@ -91,7 +101,8 @@ public class EmpresaDetalleController {
     @PostMapping("/{empresaId}/activos/{activoId}/eliminar")
     public String eliminarActivo(@PathVariable("empresaId") Long empresaId, @PathVariable("activoId") Long activoId,
                                  RedirectAttributes flash) {
-        activosService.eliminarActivo(activoId);
+        accesoService.comprobarEscritura(empresaId);
+        activosService.eliminarActivo(empresaId, activoId);
         flash.addFlashAttribute("flashSuccess", "Activo eliminado correctamente");
         return "redirect:/empresas/" + empresaId;
     }

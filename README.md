@@ -16,6 +16,7 @@ Permite registrar empresas, sus procesos críticos, el personal clave y los acti
 - [Puesta en marcha](#puesta-en-marcha)
 - [Rutas principales](#rutas-principales)
 - [Exportación a Excel](#exportación-a-excel)
+- [Seguridad y multiusuario](#seguridad-y-multiusuario)
 - [Notas de seguridad](#notas-de-seguridad)
 - [Roadmap / posibles mejoras](#roadmap--posibles-mejoras)
 
@@ -32,6 +33,7 @@ Con esos datos, la aplicación calcula automáticamente:
 
 ## Funcionalidades
 
+- **Inicio de sesión obligatorio** con Spring Security, roles y aislamiento de datos por empresa (ver [Seguridad y multiusuario](#seguridad-y-multiusuario)).
 - Alta y listado de empresas (nombre, sector, tamaño).
 - Ficha de detalle por empresa con sus proyectos BIA, personas y activos tecnológicos asociados.
 - Creación de proyectos BIA por empresa.
@@ -191,6 +193,42 @@ Por defecto la aplicación queda disponible en `http://localhost:8080`.
 
 `ExcelExportService` genera un libro `.xlsx` (Apache POI) con una hoja por proyecto BIA que incluye: nombre y descripción del proceso, RTO, RPO, impacto, probabilidad, criticidad, riesgo total con **mapa de calor por colores** (verde / amarillo / rojo / rojo oscuro según el nivel de riesgo) y los activos y personas vinculados a cada proceso.
 
+## Seguridad y multiusuario
+
+La aplicación exige iniciar sesión y separa los datos de cada cliente.
+
+| Rol | Qué puede hacer |
+|---|---|
+| `ADMIN` | Ve todas las empresas, gestiona usuarios (`/admin/usuarios`) y es el único que puede eliminar empresas. |
+| `CONSULTOR` | Ve y edita **solo** las empresas que tiene asignadas. Las empresas que crea se le asignan automáticamente. |
+| `CLIENTE` | **Solo lectura** de sus empresas asignadas: dashboard, informe ejecutivo y exportación a Excel. |
+
+Controles implementados:
+
+- **Autenticación** por formulario (Spring Security) con contraseñas en **BCrypt** (coste 12).
+- **Aislamiento entre empresas (anti-IDOR):** cada petición comprueba que el usuario tiene acceso a la empresa de la URL (`AccesoService`) y que el BIA, proceso, activo o persona pertenecen realmente a esa empresa (`ActivosService`). Cambiar un id en la URL devuelve 403/404.
+- **Protección frente a asignación masiva:** los formularios no pueden fijar ids ni relaciones (`@InitBinder`).
+- **CSRF** activado en todos los formularios.
+- **Bloqueo de cuenta** durante 15 minutos tras 5 contraseñas erróneas seguidas.
+- **Política de contraseñas** (mínimo 12 caracteres, letras y números) y **contraseñas temporales** obligatorias de cambiar en el primer acceso.
+- **Sesión endurecida:** cookie `HttpOnly` y `SameSite=Strict`, caducidad a los 30 minutos, regeneración del id de sesión al iniciar sesión, cabeceras anti-clickjacking.
+- **Tests de integración** (`SeguridadIntegrationTests`) que comprueban todo lo anterior contra una base de datos H2 en memoria.
+
+### Primer arranque
+
+Si la tabla de usuarios está vacía se crea un administrador:
+
+- Usuario: `BIA_ADMIN_USERNAME` (por defecto `admin`).
+- Contraseña: `BIA_ADMIN_PASSWORD`. Si no la defines, se genera una aleatoria que aparece **una sola vez** en el log de arranque y se pide cambiarla en el primer inicio de sesión.
+
+```bash
+BIA_ADMIN_PASSWORD='UnaContraseñaLarga2026' ./mvnw spring-boot:run
+```
+
+Desde **Usuarios** el administrador crea consultores y clientes, les asigna empresas, resetea contraseñas (genera una temporal y desbloquea la cuenta) y desactiva cuentas. Siempre debe quedar al menos un administrador activo.
+
+En producción con HTTPS define `SESSION_COOKIE_SECURE=true`.
+
 ## Notas de seguridad
 
 - El archivo `application.properties` versionado en el repositorio contiene credenciales de base de datos en texto plano (`root` / `1234`). Se recomienda **no** mantener credenciales reales en este archivo: usar variables de entorno (`SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`) o un fichero `application-local.properties` excluido de git, y añadir `application.properties` (o el fichero con secretos) al `.gitignore`.
@@ -199,7 +237,9 @@ Por defecto la aplicación queda disponible en `http://localhost:8080`.
 
 ## Roadmap / posibles mejoras
 
-- Autenticación y control de acceso por usuario/rol.
+- ~~Autenticación y control de acceso por usuario/rol.~~ Hecho.
+- Registro de auditoría (quién cambió qué y cuándo).
+- Doble factor de autenticación (TOTP).
 - Externalizar credenciales de base de datos (variables de entorno / *secrets*).
 - Migraciones de esquema con Flyway o Liquibase en lugar de `ddl-auto=update`.
 - Tests automatizados de controladores y servicios (actualmente solo existe el test de contexto por defecto de Spring Boot).

@@ -10,9 +10,10 @@
 
 <body>
     <div class="container">
+        <div th:replace="~{fragments/nav :: nav}"></div>
         <header class="header">
             <h1>Gestión de Empresas</h1>
-            <p>Administra tus empresas y sus procesos de negocio</p>
+            <p th:text="${esAdmin} ? 'Administra todas las empresas y sus procesos de negocio' : 'Empresas a las que tienes acceso'">Administra tus empresas y sus procesos de negocio</p>
         </header>
 
         <!-- FLASH MESSAGES -->
@@ -23,9 +24,9 @@
             ❌ <span th:text="${flashError}"></span>
         </div>
 
-        <section class="glass-card form-section">
+        <section class="glass-card form-section" th:if="${puedeEditar}">
             <h2 class="section-title">Registrar Nueva Empresa</h2>
-            <form action="/empresas/guardar" method="post">
+            <form th:action="@{/empresas/guardar}" method="post">
                 <div class="form-grid">
                     <div class="input-group">
                         <label for="nombre">Nombre de la empresa</label>
@@ -51,10 +52,10 @@
                 <article class="company-card" th:each="empresa : ${empresas}">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <h3 class="company-name" th:text="${empresa.nombre}">Nombre Empresa</h3>
-                        <div class="action-buttons">
+                        <div class="action-buttons" th:if="${puedeEditar}">
                             <button class="btn-icon" type="button"
                                     th:onclick="'toggleEdit(' + ${empresa.id} + ')'">✏️</button>
-                            <form th:action="@{/empresas/{id}/eliminar(id=${empresa.id})}" method="post"
+                            <form th:if="${esAdmin}" th:action="@{/empresas/{id}/eliminar(id=${empresa.id})}" method="post"
                                   style="margin: 0;" onsubmit="return confirm('¿Eliminar esta empresa y TODOS sus datos asociados (BIAs, procesos, activos, personas)? Esta acción no se puede deshacer.')">
                                 <button type="submit" class="btn-icon danger">🗑️</button>
                             </form>
@@ -87,7 +88,7 @@
                     </div>
 
                     <!-- EDIT FORM (hidden by default) -->
-                    <div th:id="'edit-' + ${empresa.id}" style="display: none; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                    <div th:if="${puedeEditar}" th:id="'edit-' + ${empresa.id}" style="display: none; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
                         <form th:action="@{/empresas/{id}/editar(id=${empresa.id})}" method="post">
                             <input type="text" name="nombre" th:value="${empresa.nombre}" required class="input-modern" placeholder="Nombre" />
                             <input type="text" name="sector" th:value="${empresa.sector}" required class="input-modern" placeholder="Sector" />
@@ -112,7 +113,7 @@
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21 15 16 10 5 21"></polyline>
                 </svg>
-                <p>No hay empresas registradas todavía.</p>
+                <p th:text="${esAdmin or puedeEditar} ? 'No hay empresas registradas todavía.' : 'Todavía no tienes empresas asignadas. Contacta con tu consultor.'">No hay empresas registradas todavía.</p>
                 <p style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.7;">Las empresas que añadas aparecerán
                     aquí.</p>
             </div>

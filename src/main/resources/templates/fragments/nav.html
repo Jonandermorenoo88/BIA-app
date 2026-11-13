@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+<nav th:fragment="nav" class="topbar" th:if="${usuarioActual != null}">
+    <div class="topbar-links">
+        <a th:href="@{/empresas}" class="topbar-brand">BIA App</a>
+        <a th:href="@{/empresas}">Empresas</a>
+        <a th:if="${esAdmin}" th:href="@{/admin/usuarios}">Usuarios</a>
+    </div>
+    <div class="topbar-user">
+        <span>
+            👤 <strong th:text="${usuarioActual.nombre}">Usuario</strong>
+            <span class="role-badge" th:text="${usuarioActual.rol.descripcion}">Rol</span>
+        </span>
+        <a th:href="@{/cuenta/password}">Cambiar contraseña</a>
+        <form th:action="@{/logout}" method="post" style="margin: 0;">
+            <button type="submit" class="btn-link">Cerrar sesión</button>
+        </form>
+    </div>
+</nav>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <title>Usuarios - BIA App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <div class="container" style="max-width: 1200px;">
+        <div th:replace="~{fragments/nav :: nav}"></div>
+
+        <header class="header">
+            <h1>Gestión de Usuarios</h1>
+            <p>Controla quién accede y a qué empresas</p>
+        </header>
+
+        <div th:if="${flashSuccess}" class="flash-message flash-success">
+            ✅ <span th:text="${flashSuccess}"></span>
+        </div>
+        <div th:if="${flashError}" class="flash-message flash-error">
+            ❌ <span th:text="${flashError}"></span>
+        </div>
+        <div th:if="${passwordTemporal}" class="flash-message flash-success" style="flex-wrap: wrap;">
+            🔑 Contraseña temporal<span th:if="${passwordTemporalUsuario}" th:text="' de ' + ${passwordTemporalUsuario}"></span>:
+            <span class="temp-password" th:text="${passwordTemporal}"></span>
+            <span style="font-size: 0.8rem;">Cópiala ahora: no se volverá a mostrar. Se pedirá cambiarla en el primer acceso.</span>
+        </div>
+
+        <section class="glass-card form-section">
+            <h2 class="section-title">Nuevo usuario</h2>
+            <form th:action="@{/admin/usuarios/crear}" method="post">
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="username">Usuario</label>
+                        <input type="text" id="username" name="username" required pattern="[a-zA-Z0-9._\-]{3,50}"
+                               placeholder="ej. ana.consultora" />
+                    </div>
+                    <div class="input-group">
+                        <label for="nombre">Nombre completo</label>
+                        <input type="text" id="nombre" name="nombre" required maxlength="100" />
+                    </div>
+                    <div class="input-group">
+                        <label for="rol">Rol</label>
+                        <select id="rol" name="rol" required class="input-modern">
+                            <option th:each="r : ${roles}" th:value="${r}" th:text="${r.descripcion}"
+                                    th:selected="${r.name() == 'CONSULTOR'}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group" th:if="${!empresas.isEmpty()}" style="margin-bottom: 1rem;">
+                    <label>Empresas asignadas (no aplica a administradores)</label>
+                    <div class="empresa-checks">
+                        <label th:each="e : ${empresas}">
+                            <input type="checkbox" name="empresaIds" th:value="${e.id}" />
+                            <span th:text="${e.nombre}"></span>
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">Crear usuario</button>
+            </form>
+        </section>
+
+        <section class="glass-card list-section">
+            <h2 class="section-title">Usuarios</h2>
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Rol / Estado</th>
+                        <th>Empresas</th>
+                        <th>Último acceso</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="u : ${usuarios}">
+                        <td>
+                            <strong th:text="${u.username}"></strong><br>
+                            <span th:text="${u.nombre}" style="color: var(--text-secondary);"></span>
+                            <div th:if="${u.bloqueado}" style="color: #fb7185; font-size: 0.8rem;">🔒 Bloqueado temporalmente</div>
+                            <div th:if="${u.debeCambiarPassword}" style="color: #fbbf24; font-size: 0.8rem;">Contraseña temporal pendiente</div>
+                        </td>
+                        <td colspan="2">
+                            <form th:action="@{/admin/usuarios/{id}/actualizar(id=${u.id})}" method="post"
+                                  style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 0.75rem; align-items: start;">
+                                <div>
+                                    <select name="rol" class="input-modern">
+                                        <option th:each="r : ${roles}" th:value="${r}" th:text="${r.descripcion}"
+                                                th:selected="${r == u.rol}"></option>
+                                    </select>
+                                    <label style="display: block; margin-top: 0.4rem; font-size: 0.85rem;">
+                                        <input type="checkbox" name="activo" value="true" th:checked="${u.activo}" /> Activo
+                                    </label>
+                                    <button type="submit" class="btn-edit" style="margin-top: 0.4rem;">Guardar</button>
+                                </div>
+                                <div>
+                                    <span th:if="${u.admin}" style="font-size: 0.85rem; color: var(--text-secondary);">Todas (administrador)</span>
+                                    <div th:unless="${u.admin}" class="empresa-checks">
+                                        <label th:each="e : ${empresas}">
+                                            <input type="checkbox" name="empresaIds" th:value="${e.id}"
+                                                   th:checked="${u.empresas.contains(e)}" />
+                                            <span th:text="${e.nombre}"></span>
+                                        </label>
+                                        <span th:if="${empresas.isEmpty()}" style="color: var(--text-secondary);">No hay empresas</span>
+                                    </div>
+                                </div>
+                            </form>
+                        </td>
+                        <td style="font-size: 0.85rem; color: var(--text-secondary);"
+                            th:text="${u.ultimoAcceso != null} ? ${#temporals.format(u.ultimoAcceso, 'dd/MM/yyyy HH:mm')} : 'Nunca'"></td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                                <form th:action="@{/admin/usuarios/{id}/reset-password(id=${u.id})}" method="post" style="margin: 0;"
+                                      onsubmit="return confirm('¿Generar una nueva contraseña temporal para este usuario?')">
+                                    <button type="submit" class="btn-icon" title="Resetear contraseña">🔑 Reset</button>
+                                </form>
+                                <form th:if="${u.id != usuarioActual.id}"
+                                      th:action="@{/admin/usuarios/{id}/eliminar(id=${u.id})}" method="post" style="margin: 0;"
+                                      onsubmit="return confirm('¿Eliminar este usuario?')">
+                                    <button type="submit" class="btn-icon danger" title="Eliminar usuario">🗑️ Eliminar</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+</body>
+</html>
