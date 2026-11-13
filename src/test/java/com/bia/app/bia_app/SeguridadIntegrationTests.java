@@ -208,6 +208,27 @@ class SeguridadIntegrationTests {
                 .andExpect(redirectedUrl("/cuenta/password"));
     }
 
+    @Test
+    void todasLasPantallasRenderizanConCadaRol() throws Exception {
+        mvc.perform(get("/login")).andExpect(status().isOk());
+        String[] rutas = {
+                "/empresas",
+                "/empresas/" + empresaA.getId(),
+                "/empresas/" + empresaA.getId() + "/bias/" + biaA.getId(),
+                "/empresas/" + empresaA.getId() + "/bias/" + biaA.getId() + "/informe-ejecutivo",
+                "/cuenta/password"
+        };
+        for (String ruta : rutas) {
+            mvc.perform(get(ruta).with(como("consultorA", Rol.CONSULTOR))).andExpect(status().isOk());
+            mvc.perform(get(ruta).with(como("clienteA", Rol.CLIENTE))).andExpect(status().isOk());
+            mvc.perform(get(ruta).with(como("jefe", Rol.ADMIN))).andExpect(status().isOk());
+        }
+        // El cliente no ve formularios de edición
+        mvc.perform(get("/empresas/" + empresaA.getId() + "/bias/" + biaA.getId()).with(como("clienteA", Rol.CLIENTE)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("procesos/guardar"))))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("solo lectura")));
+    }
+
     // ---------- helpers ----------
 
     private RequestPostProcessor como(String username, Rol rol) {
